@@ -1,0 +1,110 @@
+.metricschanges {
+  display: flex;
+  /* flex-direction: column; */
+  /* gap: 27px; */
+  /* margin-top: 10px; */
+  background-color: black;
+  font-size: 13px;
+  color: white;
+  border-radius: 8px;
+  justify-content: space-around;
+}
+
+
+
+.sales-dashboard {
+  padding: 20px;
+}
+
+.sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sales-filter {
+  display: flex;
+  gap: 10px;
+}
+
+.sales-submit-btn {
+  padding: 5px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.sales-section {
+  background-color: white;
+  border-radius: 10px;
+  /* padding: 20px; */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+}
+
+.sales-title {
+  color: #333;
+  font-size: 16px;
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+.sales-subtitle {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 10px;
+  margin-left: 10px;
+}
+
+.sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sales-table th,
+.sales-table td {
+  /* border: 1px solid #ddd; */
+  padding: 10px;
+  text-align: start;
+
+}
+
+.sales-table th {
+  border-color: inherit;
+  color: black;
+  position: sticky;
+  top: 0;
+}
+
+.sales-table tfoot td {
+  font-weight: bold;
+}
+
+.sales-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.sales-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.green-cell {
+  background-color: #c8e6c9;
+  color: green;
+}
+
+.red-cell {
+  background-color: #ffcdd2;
+  color: red;
+}
+
+.greenclr {
+  background-color: #007bff;
+}
+
+.greenclrnew {
+  background-color: lightblue;
+}

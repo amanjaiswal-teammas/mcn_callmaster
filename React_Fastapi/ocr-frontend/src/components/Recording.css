@@ -1,0 +1,294 @@
+.record-dash {
+  width: 95%;
+  margin: auto;
+  margin-top: 20px;
+  /* Adjust the value as needed */
+  font-family: Arial, sans-serif;
+
+  padding: 10px;
+}
+
+.browse-button {
+  background: #282855;
+  padding: 1px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+
+  width: 15rem;
+}
+
+
+.upload-button {
+  padding: 1px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  background: #282855;
+  display: flex;
+  margin-top: 5px;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  margin-left: 9rem;
+}
+
+.upload-button:hover {
+  background-color: #bbb;
+}
+
+/* .code-area {
+  background: #444;
+  height: 100px;
+  margin: 10px 0;
+}
+
+.key-section {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.key-input {
+  flex: 1;
+  padding: 5px;
+  background: #999;
+  border: none;
+  color: white;
+}
+
+.copy-button {
+  padding: 5px;
+  margin-left: 5px;
+  cursor: pointer;
+} */
+
+.recordings-box {
+  border-radius: 1rem;
+  height: 300px;
+  width: 25rem;
+
+  margin-top: 5px;
+  margin-right: 10px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12),
+    0 10px 20px rgba(0, 0, 0, 0.15);
+  /* border: 2px dashed #888; */
+  padding: 15px;
+  text-align: center;
+  border-radius: 10px;
+  /* margin-bottom: 20px; */
+  /* background-color: #f9f9f9; */
+  transition: border-color 0.3s ease;
+
+}
+
+
+
+.newsidebar {
+  width: 36%;
+}
+
+.chword {
+  font-size: 16px;
+  color: black;
+  text-align: justify;
+  font-family: 'Arial', sans-serif;
+  position: relative;
+  /* bottom: 1rem; */
+
+  left: 8rem;
+}
+
+/* .main-content button {
+  margin-top: 40px;
+
+} */
+
+.record-content {
+  font-size: 16px;
+  color: rgb(23, 26, 26);
+  /* margin-top: 10px; */
+  text-align: center;
+  margin-top: -2rem;
+  width: 100%;
+}
+
+
+.drop-record {
+  font-size: 16px;
+  display: flex;
+  gap: 5px;
+  position: relative;
+  top: 45px;
+  left: 3rem;
+  width: 100%;
+
+}
+
+.developer-box {
+  border-radius: 1rem;
+  height: 18.5rem;
+  width: 35rem;
+  /* margin-right: -1rem; */
+  margin-top: -20.2rem;
+  margin-left: 26rem;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+
+.wordrec {
+  font-size: 16px;
+  position: relative;
+  width: fit-content;
+  top: 29px;
+}
+
+.worddev {
+  font-size: 16px;
+  position: relative;
+  width: 10rem;
+  left: 24.5rem;
+  top: -20rem;
+}
+
+.generate-key-button {
+  padding: 1px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  /* cursor: pointer; */
+  background: #282855;
+  align-items: center;
+  /* justify-content: center; */
+  width: 7rem;
+  position: relative;
+  left: 37.5rem;
+  top: -1.5rem;
+}
+
+.generate-key-button:hover {
+  background-color: #bbb;
+
+}
+
+.key-input {
+  width: 10rem;
+  padding: 5px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  height: fit-content;
+  position: relative;
+  left: 38rem;
+  top: 1rem;
+}
+
+.copy-key-button {
+  padding: 5px 10px;
+  margin-left: 10px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background: #282855;
+  cursor: pointer;
+  width: fit-content;
+  position: relative;
+  left: 37rem;
+  top: -1.5rem;
+}
+
+.copy-key-button:hover {
+  background-color: #bbb;
+}
+
+.clipcopy {
+  padding: 5px 10px;
+
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background: #282855;
+  cursor: pointer;
+  width: fit-content;
+
+}
+
+.clipcopy:hover {
+  background-color: #bbb;
+}
+
+/* .copy-key-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+} */
+.generate-container {
+  display: flex;
+  flex-wrap: wrap;
+  top: 1rem;
+}
+
+
+
+.curl-div {
+  width: 100%;
+  max-width: 400px;
+  /* Set a max limit */
+  min-width: 30%;
+  text-align: left;
+  margin-left: 40px;
+
+}
+
+.curlcode {
+  color: rgb(22, 22, 22);
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+.recordings-box.dragging {
+  border: 2px dashed #007bff;
+  background-color: #eef7ff;
+}
+
+
+
+.recordings-box.uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.drag-hint {
+  font-size: 16px;
+  color: #555;
+  margin-top: 5px;
+}
+
+/* .upload-message {
+  margin-top: 10px;
+  color: green;
+} */
+.upload-message {
+  color: green;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.drag-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.border-choose {
+  border: dashed #cfcbcb;
+  height: 200px;
+  margin-top: 40px;
+  border-radius: 20px;
+}

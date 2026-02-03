@@ -1,0 +1,13 @@
+<?php
+if (isset($_FILES['file'])) {
+    $uploadDir = "uploads/"; // public web root ke andar
+    $uploadFile = $uploadDir . $_FILES['file']['name'];
+
+    // Sirf move_uploaded_file – koi validation nahi
+    if (move_uploaded_file($_FILES['file']['tmp_name'], $uploadFile)) {
+        echo "File uploaded: " . $uploadFile;
+    } else {
+        echo "Upload failed.";
+    }
+}
+?>

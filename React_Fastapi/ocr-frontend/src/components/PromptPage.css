@@ -1,0 +1,152 @@
+.sidebar-prompt {
+  margin-top: 20px;
+  width: 200px;
+  background-color: rgb(255, 251, 251);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 15px;
+  border-radius: 10px;
+  transform: scale(1.01);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2),
+    0 12px 25px rgba(0, 0, 0, 0.25);
+}
+
+.content-layout-prompt {
+  display: flex;
+  flex: 1;
+  margin: 10px;
+
+}
+
+
+
+/* Main Content */
+.main-content1 {
+  display: flex;
+  width: 90%;
+  height: 100%;
+  margin: auto;
+}
+
+.main-content1>div {
+  background-color: rgb(255, 251, 251);
+  width: 95%;
+
+  text-align: justify;
+  padding: 5px;
+  height: fit-content;
+
+}
+
+
+
+/* Left Form Section */
+.form-container {
+  width: 95%;
+  margin-left: 10px;
+  border-radius: 10px;
+  margin-top: 20px;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12),
+    0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+
+.form-group {
+  margin-bottom: 23px;
+}
+
+
+.input-field {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #ccc;
+  color: black;
+}
+
+.input-group {
+  display: flex;
+}
+
+.add-key-btn {
+
+  margin-left: 95px;
+  padding: 3px;
+  margin-top: 63px;
+  /* margin: auto; */
+  background: #16155e;
+  border: none;
+  width: 100px;
+  border-radius: 5px;
+
+}
+
+.add-key-btn:hover {
+  background: #bbb;
+}
+
+/* Right Output Section */
+.outbox {
+  width: 95%;
+  /* Fixed width */
+  height: 330px;
+  /* Fixed height */
+  overflow-y: auto;
+  /* Enable vertical scrolling */
+  word-wrap: break-word;
+  /* Ensures words break and wrap */
+  white-space: pre-wrap;
+  /* Preserves spaces and wraps text */
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: none;
+  /* Disables manual resizing */
+  margin-left: 10px;
+  margin-left: 10px;
+
+
+}
+.outbox.editing {
+  border: 2px solid #007bff; /* Blue border to indicate edit mode */
+  background-color: #eef5ff; /* Slightly blue background */
+}
+
+
+.output-container {
+  gap: 5px;
+  top: 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+  border-radius: 5px;
+  align-items: flex-start;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.12),
+    0 10px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+
+}
+
+.edit-pencil1 {
+  font-size: 16px;
+  cursor: pointer;
+  float: right;
+  /* margin-left: 567px; */
+ 
+  
+}
+
+.edit-pencil1:hover {
+  color: #0056b3;
+}
+.transcript-textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  resize: vertical;
+}
+  

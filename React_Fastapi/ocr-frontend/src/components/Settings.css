@@ -1,0 +1,68 @@
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  /* max-width: 400px; */
+  margin: auto;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  width: 100%;
+  height: 260px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.settings-container label {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.settings-container input,
+.settings-container select,
+.settings-container button {
+  width: 25%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.settings-container button {
+  margin-top: 56px;
+  padding: 10px;
+  margin-left: 275px;
+  width: 105px;
+  height: 40px;
+  text-align: center;
+  /* text-align: center; */
+  background: #16155e;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.settings-container button:hover {
+  background: #bbb;
+}
+
+.save-btn {
+  margin-left: 490px !important;
+}
+
+.org-box {
+  display: flex;
+  column-gap: 20px;
+  margin-left: 100px;
+}
+.org-box12 {
+  display: flex;
+  column-gap: 20px;
+  margin-left: 100px;
+}
+.box-label {
+  margin-left: 76px;
+}
+.box-label2 {
+  margin-left: 64px;
+}

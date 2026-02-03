@@ -1,0 +1,168 @@
+/* Main Container (Flexbox for 50/50 split) */
+.container1 {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  /* Full viewport height */
+}
+
+/* Left Side - Image Section */
+.image-section {
+  width: 65%;
+  /* Explicitly set 50% width */
+  display: flex;
+  justify-content: center;
+  align-items: self-end;
+  background-color: #ffffff;
+  /* Light background */
+  overflow: hidden;
+  /* Prevents overflow issues */
+}
+
+.image-preview {
+  width: 70%;
+  /* Ensures it takes full width */
+  height: 70%;
+  /* Ensures it takes full height */
+  object-fit: cover;
+  /* Ensures image covers the section */
+  border-radius: 0;
+  /* Optional: Removes rounded corners for full coverage */
+}
+
+.logo {
+  position: absolute;
+  top: 25%;
+  left: 32%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  /* Center-align content */
+}
+
+.logo-overlay {
+  width: 70%;
+  height: 70%;
+
+}
+
+.welcome-text {
+  margin-top: 10px;
+  font-size: 40px;
+  font-weight: bold;
+  color: #0a0a0a;
+  /* Adjust color as needed */
+
+}
+
+#new {
+  width: 45%;
+}
+
+
+/* Right Side - Login Section---------------------------------------------------------- */
+.login-section {
+  width: 40%;
+  /* Explicitly set 50% width */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: left;
+  text-align: left;
+  padding: 10px;
+  background-color: white;
+  flex: 1;
+}
+
+.sub-text {
+  font-size: 16px;
+  color: gray;
+  margin-bottom: 20px;
+
+
+}
+
+form {
+  width: 90%;
+  /* max-width: 350px; */
+}
+
+input {
+  width: 100%; /* Set input to full width of the form container */
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #949ba3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+
+}
+
+/* button:hover {
+  background-color: #0056b3;
+} */
+
+/* Error Message */
+.error {
+  color: red;
+  font-size: 13px;
+}
+
+
+/* .forgot{
+
+
+} */
+
+
+@media (max-width: 768px) {
+  .container {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+.password-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.password-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.password-wrapper input {
+  flex: 1;
+  padding-right: 40px; /* Ensures space for the eye icon */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.3s ease;
+}
+
+.eye-icon:hover {
+  color: #000;
+}
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

@@ -1,0 +1,161 @@
+/* Dashboard Container */
+.dashboard-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+/* Key Metrics */
+.metrics-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Metric Cards */
+.metric-container {
+    display: flex;
+    gap: 10px;
+}
+
+.metric-card {
+    padding: 15px;
+    border-radius: 10px;
+    width:50%;
+    /* text-align: center; */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.green-met {
+    background-color: #79bd7c;
+    color: black;
+}
+
+.blue-met {
+    background-color: rgb(50 116 215);
+    color: black;
+}
+
+.metrics {
+    display: flex;
+    /* flex-direction: column; */
+    /* gap: 27px; */
+    /* margin-top: 10px; */
+    font-size: 13px;
+    background-color: black;
+    color: white;
+    border-radius: 8px;
+    justify-content: space-around;
+}
+
+.metrics div {
+    font-size: 13x;
+}
+
+.metrics b {
+    font-size: 13px;
+    display: block;
+}
+
+/* Charts */
+.chart-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    /* margin-bottom: 20px; */
+    width: 50%;
+}
+
+h2 {
+    font-size: 16x;
+    margin-bottom: 10px;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 13x;
+    color: gray;
+}
+
+/* Custom Bullet Legend */
+.legend {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 0px;
+    margin-top: 10px;
+    padding: 0;
+    font-size: 13px;
+}
+
+.legend li {
+    /* display: flex;
+    align-items: center; */
+    font-size: 13x;
+}
+
+.bullet {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+.block1div
+{
+    width: 100%;
+    display: flex;
+    gap: 15px;
+    /* margin-left: 11px; */
+    margin-top: 5px;
+}
+.block2div
+{
+    width: 100%;
+    display: flex;
+    gap: 15px;
+    /* margin-left: 11px; */
+    margin-top: 5px;
+}
+.recharts-surface
+{
+    width: 102% !important;
+}
+
+.scb_rcb_fontclass
+{
+    font-size: 16px;
+    text-align: justify;
+    /* font-weight: bold; */
+}
+.cst_crt_fontclass
+{
+    font-size: 16px;
+    text-align: center;
+    /* font-weight: bold; */
+}
+.funnel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+  
+.funnel-item {
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease-in-out;
+}
+  
+/* .funnel-item:hover {
+    transform: scale(1.05);
+} */
+
