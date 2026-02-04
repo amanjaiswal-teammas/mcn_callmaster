@@ -44,24 +44,48 @@ PROMPT_DB = {
 # ---------- HELPERS ----------
 def deepgram_transcribe(audio_url: str) -> str:
     try:
+        if not audio_url:
+            logging.error("Recording URL missing")
+            return ""
+
+        audio_res = requests.get(audio_url, timeout=20)
+
+        if audio_res.status_code != 200:
+            logging.error(f"Recording fetch failed: {audio_res.status_code}")
+            return ""
+
+        if len(audio_res.content) < 1000:
+            logging.error("Audio file too small / empty")
+            return ""
+
         headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
         params = {"punctuate": "true", "model": "nova"}
-        audio_data = requests.get(audio_url, timeout=20).content
 
         res = requests.post(
             "https://api.deepgram.com/v1/listen",
             headers=headers,
             params=params,
-            data=audio_data
+            data=audio_res.content
         )
 
-        if res.status_code == 200:
-            return res.json()["results"]["channels"][0]["alternatives"][0].get("transcript", "")
-        logging.error(res.text)
-        return ""
+        if res.status_code != 200:
+            logging.error(f"Deepgram API error: {res.text}")
+            return ""
+
+        transcript = (
+            res.json()
+            .get("results", {})
+            .get("channels", [{}])[0]
+            .get("alternatives", [{}])[0]
+            .get("transcript", "")
+        )
+
+        return transcript.strip()
+
     except Exception as e:
         logging.error(f"Deepgram error: {e}")
         return ""
+
 
 
 def send_to_gpt(prompt: str) -> dict:
@@ -99,6 +123,23 @@ def get_prompt(client_id):
 
     return row["Prompt"] if row else ""
 
+
+def safe_int(value, default=0):
+    try:
+        if value in ("", None):
+            return default
+        return int(value)
+    except:
+        return default
+
+
+def safe_timestamp(dt):
+    try:
+        if not dt:
+            return 0
+        return int(dt.timestamp())
+    except:
+        return 0
 
 
 # ---------- WORKER ----------
@@ -143,7 +184,147 @@ def worker_loop():
 
             transcription = deepgram_transcribe(row["recording_url"])
             if not transcription:
-                raise Exception("Empty transcription")
+                logging.warning(f"Empty transcription for ID {row['id']}")
+
+                audit_conn = mysql.connector.connect(**AUDIT_DB)
+                audit_cur = audit_conn.cursor()
+
+                start_epoch = safe_timestamp(row.get("CallDate"))
+                duration = safe_int(row.get("CallDurationSecond"))
+                end_epoch = start_epoch + duration
+
+                sql = """
+                INSERT INTO call_quality_assessment (
+                ClientId, MobileNo, User, lead_id, CallDate, Campaign,
+                start_epoch, end_epoch,
+                length_in_sec, Transcribe_Text,
+
+                scenario, scenario1, scenario2, scenario3,
+
+                call_answered_within_5_seconds,
+                professionalism_maintained,
+                assurance_or_appreciation_provided,
+                pronunciation_and_clarity,
+                enthusiasm_and_no_fumbling,
+                active_listening,
+                politeness_and_no_sarcasm,
+                proper_grammar,
+                accurate_issue_probing,
+                proper_hold_procedure,
+                dead_air_under_10_seconds,
+                proper_transfer_and_language,
+                correct_and_complete_information,
+                further_assistance_offered,
+                proper_call_closure,
+                express_empathy,
+
+                total_score, max_score, quality_percentage,
+
+                areas_for_improvement,
+
+                top_positive_words,
+                top_negative_words,
+                top_positive_words_agent,
+                top_negative_words_agent,
+
+                agent_english_cuss_words,
+                agent_english_cuss_count,
+                agent_hindi_cuss_words,
+                agent_hindi_cuss_count,
+                customer_english_cuss_words,
+                customer_english_cuss_count,
+                customer_hindi_cuss_words,
+                customer_hindi_cuss_count,
+
+                Competitor_Name,
+                Positive_Comparison,
+                Reason_for_Positive_Comparison,
+                Exact_Positive_Language,
+                Negative_Comparison,
+                Reason_for_Negative_Comparison,
+                Exact_Negative_Language,
+
+                sensetive_word,
+                sensitive_word_context,
+
+                data_theft_or_misuse,
+                unprofessional_behavior,
+                system_manipulation,
+                financial_fraud,
+                escalation_failure,
+                collusion,
+                policy_communication_failure,
+
+                Data_Theft_or_Misuse_Text,
+                Unprofessional_Behavior_Text,
+                System_Manipulation_Text,
+                Financial_Fraud_Text,
+                Escalation_Failure_Text,
+                Collusion_Text,
+                Policy_Communication_Failure_Text
+                )
+                VALUES (
+                %s,%s,%s,%s,%s,%s,%s,%s,
+                %s,%s,
+                %s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                %s,%s,%s,
+                %s,
+                %s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s,%s,
+                %s,%s,
+                %s,%s,%s,%s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s,%s
+                )
+                """
+
+                audit_cur.execute(sql, (
+
+                    client_id,
+                    row["PhoneNumber"],
+                    row["AgentName"],
+                    row["LeadId"],
+                    row["CallDate"],
+                    row["CampaignName"],
+                    start_epoch,
+                    end_epoch,
+                    duration,
+                    "",  # transcription empty
+
+                    None, None, None, None,  # classification
+
+                    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+
+                    0, 0, 0,  # score fields
+
+                    None,
+
+                    None, None, None, None,
+
+                    None, 0, None, 0, None, 0, None, 0,
+
+                    None, None, None, None, None, None, None,
+
+                    None, None,
+
+                    None, None, None, None, None, None, None,
+
+                    None, None, None, None, None, None, None
+                ))
+
+                audit_conn.commit()
+
+                dialer_cur.execute(
+                    "UPDATE cdr_du_digital_korea SET flag = 2 WHERE id = %s",
+                    (row["id"],)
+                )
+                dialer_conn.commit()
+
+                audit_cur.close()
+                audit_conn.close()
+
+                continue
 
             gpt_data = send_to_gpt(f"{prompt}\n\nConversation:\n{transcription}")
 
@@ -157,94 +338,9 @@ def worker_loop():
             audit_conn = mysql.connector.connect(**AUDIT_DB)
             audit_cur = audit_conn.cursor()
 
-            start_epoch = int(row["CallDate"].timestamp())
-            end_epoch = start_epoch + int(row["CallDurationSecond"])
-
-            sql = """
-            INSERT INTO call_quality_assessment (
-            ClientId, MobileNo, User, lead_id, CallDate, Campaign,
-            start_epoch, end_epoch,
-            length_in_sec, Transcribe_Text,
-
-            scenario, scenario1, scenario2, scenario3,
-
-            call_answered_within_5_seconds,
-            professionalism_maintained,
-            assurance_or_appreciation_provided,
-            pronunciation_and_clarity,
-            enthusiasm_and_no_fumbling,
-            active_listening,
-            politeness_and_no_sarcasm,
-            proper_grammar,
-            accurate_issue_probing,
-            proper_hold_procedure,
-            dead_air_under_10_seconds,
-            proper_transfer_and_language,
-            correct_and_complete_information,
-            further_assistance_offered,
-            proper_call_closure,
-            express_empathy,
-
-            total_score, max_score, quality_percentage,
-
-            areas_for_improvement,
-
-            top_positive_words,
-            top_negative_words,
-            top_positive_words_agent,
-            top_negative_words_agent,
-
-            agent_english_cuss_words,
-            agent_english_cuss_count,
-            agent_hindi_cuss_words,
-            agent_hindi_cuss_count,
-            customer_english_cuss_words,
-            customer_english_cuss_count,
-            customer_hindi_cuss_words,
-            customer_hindi_cuss_count,
-
-            Competitor_Name,
-            Positive_Comparison,
-            Reason_for_Positive_Comparison,
-            Exact_Positive_Language,
-            Negative_Comparison,
-            Reason_for_Negative_Comparison,
-            Exact_Negative_Language,
-
-            sensetive_word,
-            sensitive_word_context,
-
-            data_theft_or_misuse,
-            unprofessional_behavior,
-            system_manipulation,
-            financial_fraud,
-            escalation_failure,
-            collusion,
-            policy_communication_failure,
-
-            Data_Theft_or_Misuse_Text,
-            Unprofessional_Behavior_Text,
-            System_Manipulation_Text,
-            Financial_Fraud_Text,
-            Escalation_Failure_Text,
-            Collusion_Text,
-            Policy_Communication_Failure_Text
-            )
-            VALUES (
-            %s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,
-            %s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,
-            %s,
-            %s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s,
-            %s,%s,
-            %s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s
-            )
-            """
+            start_epoch = safe_timestamp(row.get("CallDate"))
+            duration = safe_int(row.get("CallDurationSecond"))
+            end_epoch = start_epoch + duration
 
             audit_cur.execute(sql, (
 
@@ -256,7 +352,7 @@ def worker_loop():
                 row["CampaignName"],
                 start_epoch,
                 end_epoch,
-                row["CallDurationSecond"],
+                duration,
                 transcription,
 
                 classification.get("scenario"),
