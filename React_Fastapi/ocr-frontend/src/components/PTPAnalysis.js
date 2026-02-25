@@ -11,6 +11,8 @@ import {
   Pie,
   Cell,
   Legend,
+  LineChart,
+  Line,
 } from "recharts";
 import axios from "axios";
 import { BASE_URL } from "./config";
@@ -319,6 +321,39 @@ setLoading1(true);
 };
 
 
+  // ================= HARD CODED DASHBOARD DATA =================
+
+  const vitalSigns = {
+      callVolume: 10000,
+      reachability: "5.00%",
+      conversion: "31.80%",
+      qualityScore: "88%",
+  };
+
+  const callingStatus = [
+      { status: "Connect", count: 500, percent: 5 },
+      { status: "Not Connect", count: 9500, percent: 95 },
+  ];
+
+  const funnelAnalysis = [
+      { name: "Call Drop NI", value: 45 },
+      { name: "PTP", value: 159 },
+      { name: "Call Back", value: 76 },
+      { name: "Language Issue", value: 10 },
+      { name: "NI to Pay", value: 210 },
+  ];
+
+  const qualityAnalysis = [
+      { name: "Loan details confirm", value: 95 },
+      { name: "Objection handling", value: 94 },
+      { name: "Urgency created", value: 75 },
+      { name: "Financial explanation", value: 100 },
+      { name: "Alternate payment option", value: 50 },
+      { name: "Opening & closing correct", value: 100 },
+      { name: "No rude tone", value: 100 },
+  ];
+
+
 
 
   return (
@@ -413,6 +448,41 @@ setLoading1(true);
           >
             Apply Filters
           </button>
+        </div>
+
+        {/* ================= VITAL SIGNS ================= */}
+
+        <div style={{ background: "#1f2937", padding: 20, borderRadius: 8, marginBottom: 20 }}>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4,1fr)",
+            gap: 12
+          }}>
+            <div style={cardStyle("#2563eb")}>
+              <h2>{vitalSigns.callVolume}</h2>
+              <p>Card 1: Call Volume</p>
+              <small>Total Attempts</small>
+            </div>
+
+            <div style={cardStyle("#9333ea")}>
+              <h2>{vitalSigns.reachability}</h2>
+              <p>Card 2: Reachability</p>
+              <small>Connect Rate (Low)</small>
+            </div>
+
+            <div style={cardStyle("#16a34a")}>
+              <h2>{vitalSigns.conversion}</h2>
+              <p>Card 3: Conversion</p>
+              <small>PTP Conversion</small>
+            </div>
+
+            <div style={cardStyle("#f59e0b")}>
+              <h2>{vitalSigns.qualityScore}</h2>
+              <p>Card 4: Quality Score</p>
+              <small>Overall Compliance</small>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
@@ -539,6 +609,129 @@ setLoading1(true);
 </div>
 
           </div>
+        </div>
+
+        {/* ================= CHARTS ================= */}
+
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"1fr 1fr 1fr",
+          gap:16,
+          marginBottom: "20px"
+        }}>
+
+        {/* Call Status Pie */}
+        <div style={sectionStyle}>
+        <h4>Call Status</h4>
+
+        <PieChart width={300} height={250}>
+          <Pie
+            data={callingStatus}
+            dataKey="percent"
+            nameKey="status"
+            outerRadius={90}
+            label
+          >
+            <Cell fill="#60a5fa"/>
+            <Cell fill="#fb923c"/>
+          </Pie>
+          <Legend/>
+        </PieChart>
+
+        </div>
+
+        {/* Funnel Bar */}
+        <div style={sectionStyle}>
+        <h4>Funnel Analysis</h4>
+
+        <BarChart width={300} height={250} data={funnelAnalysis}>
+        <CartesianGrid strokeDasharray="3 3"/>
+        <XAxis dataKey="name"/>
+        <YAxis/>
+        <Tooltip/>
+        <Bar dataKey="value" fill="#60a5fa"/>
+        </BarChart>
+
+        </div>
+
+        {/* Quality Line */}
+        <div style={sectionStyle}>
+        <h4>Quality & Hygiene Analysis</h4>
+
+        <LineChart width={300} height={250} data={qualityAnalysis}>
+        <CartesianGrid strokeDasharray="3 3"/>
+        <XAxis dataKey="name"/>
+        <YAxis/>
+        <Tooltip/>
+        <Line type="monotone" dataKey="value" stroke="#3b82f6"/>
+        </LineChart>
+
+        </div>
+
+        </div>
+
+        {/* ================= TABLES ================= */}
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: 16,
+          marginBottom: 20
+        }}>
+
+        {/* Calling Status */}
+        <div style={sectionStylenew}>
+          <h4>Calling Status Analysis</h4>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Count</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {callingStatus.map((row,i)=>(
+                <tr key={i}>
+                  <td>{row.status}</td>
+                  <td>{row.count}</td>
+                  <td>{row.percent}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Funnel */}
+        <div style={sectionStylenew}>
+          <h4>Funnel Analysis</h4>
+          <table style={tableStyle}>
+            <tbody>
+              {funnelAnalysis.map((row,i)=>(
+                <tr key={i}>
+                  <td>{row.name}</td>
+                  <td>{row.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Quality */}
+        <div style={sectionStylenew}>
+          <h4>Quality & Hygiene Analysis</h4>
+          <table style={tableStyle}>
+            <tbody>
+              {qualityAnalysis.map((row,i)=>(
+                <tr key={i}>
+                  <td>{row.name}</td>
+                  <td>{row.value}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
         </div>
 
         {/* Tables */}
