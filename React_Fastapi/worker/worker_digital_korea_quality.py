@@ -8,7 +8,6 @@ import re
 from openai import OpenAI
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 # ---------- CONFIG ----------
@@ -87,7 +86,6 @@ def deepgram_transcribe(audio_url: str) -> str:
         return ""
 
 
-
 def send_to_gpt(prompt: str) -> dict:
     try:
         res = client.chat.completions.create(
@@ -104,24 +102,33 @@ def send_to_gpt(prompt: str) -> dict:
         return {}
 
 
+prompt_conn = None
+prompt_cur = None
+
+
 def get_prompt(client_id):
-    conn = mysql.connector.connect(**PROMPT_DB)
-    cur = conn.cursor(dictionary=True)
+    global prompt_conn, prompt_cur
 
-    cur.execute("""
-        SELECT Prompt
-        FROM tbl_prompt
-        WHERE ClientId = %s
-        AND status = 1
-        ORDER BY id DESC
-        LIMIT 1
-    """, (client_id,))
+    try:
+        if not prompt_conn or not prompt_conn.is_connected():
+            prompt_conn = mysql.connector.connect(**PROMPT_DB)
+            prompt_cur = prompt_conn.cursor(dictionary=True)
 
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
+        prompt_cur.execute("""
+            SELECT Prompt
+            FROM tbl_prompt
+            WHERE ClientId = %s
+            AND status = 1
+            ORDER BY id DESC
+            LIMIT 1
+        """, (client_id,))
 
-    return row["Prompt"] if row else ""
+        row = prompt_cur.fetchone()
+        return row["Prompt"] if row else ""
+
+    except Exception as e:
+        logging.error(f"Prompt DB error: {e}")
+        return ""
 
 
 def safe_int(value, default=0):
@@ -144,11 +151,15 @@ def safe_timestamp(dt):
 
 # ---------- WORKER ----------
 def worker_loop():
+    dialer_conn = mysql.connector.connect(**DIALER_DB, autocommit=True)
+    dialer_cur = dialer_conn.cursor(dictionary=True)
+
     while True:
         audit_conn = None
         audit_cur = None
-        dialer_conn = mysql.connector.connect(**DIALER_DB)
-        dialer_cur = dialer_conn.cursor(dictionary=True)
+
+        if not dialer_conn.is_connected():
+            dialer_conn.reconnect()
 
         dialer_cur.execute("""
             SELECT *
@@ -165,8 +176,6 @@ def worker_loop():
         row = dialer_cur.fetchone()
         if not row:
             logging.info("No new records. Sleeping...")
-            dialer_cur.close()
-            dialer_conn.close()
             time.sleep(10)
             continue
 
@@ -179,15 +188,11 @@ def worker_loop():
                 client_id = "474"
             else:
                 logging.error("Unknown vendor_lead_code")
-                dialer_cur.close()
-                dialer_conn.close()
                 continue
 
             prompt = get_prompt(client_id)
             if not prompt:
                 logging.error(f"No prompt for client {client_id}")
-                dialer_cur.close()
-                dialer_conn.close()
                 continue
 
             transcription = deepgram_transcribe(row["recording_url"])
@@ -333,9 +338,6 @@ def worker_loop():
                 audit_cur.close()
                 audit_conn.close()
 
-                dialer_cur.close()
-                dialer_conn.close()
-
                 continue
 
             gpt_data = send_to_gpt(f"{prompt}\n\nConversation:\n{transcription}")
@@ -450,14 +452,7 @@ def worker_loop():
             logging.error(f"Error: {e}")
             dialer_conn.rollback()
 
-
         finally:
-            try:
-                dialer_cur.close()
-                dialer_conn.close()
-            except:
-                pass
-
             if audit_cur:
                 audit_cur.close()
             if audit_conn:
