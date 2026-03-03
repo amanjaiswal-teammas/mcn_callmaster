@@ -210,9 +210,15 @@ def worker():
             start_epoch = timestamp_epoch(row["date_time"])
             end_epoch = start_epoch + duration_sec
 
+            # Set client_id based on campaign_name
+            if row["campaign_name"] in ("Outbound", "Personal"):
+                client_id_value = 493
+            else:
+                client_id_value = CLIENT_ID
+
             insert_data = {
 
-                "client_id": CLIENT_ID,
+                "client_id": client_id_value,
                 "campaign_id": row["campaign_name"],
                 "length_in_sec": duration_sec,
                 "start_epoch": start_epoch,
