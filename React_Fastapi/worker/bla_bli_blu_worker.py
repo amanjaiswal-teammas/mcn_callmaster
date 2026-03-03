@@ -165,6 +165,9 @@ def worker():
     dialer = mysql.connector.connect(**DIALER_DB, autocommit=True)
     dcur = dialer.cursor(dictionary=True)
 
+    audit = mysql.connector.connect(**AUDIT_DB)
+    acur = audit.cursor()
+
     prompt = get_prompt()
 
     if not prompt:
@@ -172,6 +175,9 @@ def worker():
         return
 
     while True:
+
+        dialer.ping(reconnect=True, attempts=3, delay=5)
+        audit.ping(reconnect=True, attempts=3, delay=5)
 
         dcur.execute("""
             SELECT *
@@ -203,9 +209,6 @@ def worker():
 
             start_epoch = timestamp_epoch(row["date_time"])
             end_epoch = start_epoch + duration_sec
-
-            audit = mysql.connector.connect(**AUDIT_DB)
-            acur = audit.cursor()
 
             insert_data = {
 
@@ -287,14 +290,6 @@ def worker():
 
         except Exception as e:
             logging.error(e)
-            dialer.rollback()
-
-        finally:
-            try:
-                acur.close()
-                audit.close()
-            except:
-                pass
 
         time.sleep(2)
 
