@@ -227,6 +227,8 @@ def worker():
                 "AgentName": row["agent_name"],
                 "MobileNo": row["customer_number"],
 
+                "CallDisposition": row["disposition"],
+
                 "Opening": gpt_data.get("Opening"),
                 "Offered": gpt_data.get("Offered"),
                 "ObjectionHandling": gpt_data.get("ObjectionHandling"),
