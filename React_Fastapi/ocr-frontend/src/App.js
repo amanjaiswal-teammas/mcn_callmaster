@@ -36,6 +36,7 @@ import ApiHelp from './pages/ApiHelp';
 import PTPAnalysis from './components/PTPAnalysis'
 import Insight from './components/Insight'
 import Portfolio from './components/Portfolio'
+import AuditConfig from './components/AuditConfig'
 
 
 
@@ -130,6 +131,8 @@ const App = () => {
         <Route path="/PTPAnalysis" element={<ProtectedRoute isLoggedIn={isLoggedIn} element={<PTPAnalysis onLogout={handleLogout}/>} />} />
         <Route path="/Insight" element={<ProtectedRoute isLoggedIn={isLoggedIn} element={<Insight onLogout={handleLogout}/>} />} />
         <Route path="/Portfolio" element={<ProtectedRoute isLoggedIn={isLoggedIn} element={<Portfolio onLogout={handleLogout}/>} />} />
+
+        <Route path="/audit-config" element={<ProtectedRoute isLoggedIn={isLoggedIn} element={<AuditConfig onLogout={handleLogout}/>} />} />
 
 
 

@@ -1,0 +1,124 @@
+button {
+  padding: 8px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.btn-group {
+  margin-top: 10px;
+}
+
+.cancel-btn {
+  background: #ccc;
+}
+
+.audit-container {
+  display: flex;
+  gap: 20px;
+}
+
+/* FORM */
+.form-card {
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.full-width {
+  grid-column: span 2;
+  background: #f5f5f5;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+/* TAGS */
+.tag-container {
+  margin-top: 8px;
+}
+
+.tag {
+  display: inline-block;
+  background: #e3f2fd;
+  padding: 4px 8px;
+  margin: 2px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.tag.small {
+  font-size: 11px;
+}
+
+/* REMAINING BOX */
+.remaining-box {
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* BUTTONS */
+.primary-btn {
+  background: #1976d2;
+  color: white;
+  border: none;
+}
+
+.edit-btn {
+  background: #ffa726;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* TABLE */
+.table-card {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+/* BADGE */
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: white;
+}
+
+.badge.inbound {
+  background: green;
+}
+
+.badge.outbound {
+  background: purple;
+}

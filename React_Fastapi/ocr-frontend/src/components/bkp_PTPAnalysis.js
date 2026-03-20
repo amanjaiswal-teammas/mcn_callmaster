@@ -16,7 +16,6 @@ import {
 } from "recharts";
 import axios from "axios";
 import { BASE_URL } from "./config";
-import { ResponsiveContainer } from "recharts";
 
 const PTPAnalysis = () => {
   const [startDate, setStartDate] = useState(
@@ -25,11 +24,6 @@ const PTPAnalysis = () => {
   const [endDate, setEndDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-
-  const isTodaySelected = () => {
-      const today = new Date().toISOString().split("T")[0];
-      return startDate === today && endDate === today;
-  };
 
   const [summary, setSummary] = useState(null);
 
@@ -342,7 +336,7 @@ setLoading1(true);
   ];
 
   const funnelAnalysis = [
-      { name: "Call Drop", value: 45 },
+      { name: "Call Drop NI", value: 45 },
       { name: "PTP", value: 159 },
       { name: "Call Back", value: 76 },
       { name: "Language Issue", value: 10 },
@@ -357,110 +351,9 @@ setLoading1(true);
       { name: "Alternate payment option", value: 50 },
       { name: "Opening & closing correct", value: 100 },
       { name: "No rude tone", value: 100 },
-      { name: "Total Score", value: 88 },
   ];
 
-  const summaryData = {
-      total_ptps: 159,
-      low_confidence: 4,
-      high_confidence: 98,
-      follow_up_cases: 76,
-  };
 
-  const followUpBuckets = [
-      { name: "Same Month", value: Math.round(summaryData.follow_up_cases * 0.3) },
-      { name: "Next Month", value: Math.round(summaryData.follow_up_cases * 0.7) }
-  ];
-
-  const insightStaticData = [
-      { date: "03 Jun", agent: "Sarah", customer_name: "N/A", sentiment: "Neutral", confidence: "85%" },
-      { date: "03 Jun", agent: "AI Collections Call Analyzer", customer_name: "NA", sentiment: "Positive", confidence: "95%" },
-      { date: "03 Jun", agent: "Alex", customer_name: "Unknown", sentiment: "Positive", confidence: "82%" },
-      { date: "03 Jun", agent: "Mr. Taylor", customer_name: "Customer", sentiment: "Hesitant", confidence: "80%" },
-      { date: "02 Jun", agent: "Sachin Kumar", customer_name: "Not provided", sentiment: "Positive", confidence: "85%" },
-      { date: "29 May", agent: "Neha", customer_name: "Unknown", sentiment: "Neutral", confidence: "75%" },
-      { date: "29 May", agent: "Prakash", customer_name: "Sir", sentiment: "Positive", confidence: "85%" },
-      { date: "27 May", agent: "Krshna Kumar", customer_name: "Krshna", sentiment: "Positive", confidence: "85%" }
-  ];
-
-  const agentAccuracyStaticData = [
-      { agent: "AI Collections Call Analyzer", total_ptps: 56, avg_confidence: 84.14, failed_ptps: 4, accuracy_pct: 92.86 },
-      { agent: "Sarah", total_ptps: 6, avg_confidence: 85.83, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "AI Collections Bot", total_ptps: 5, avg_confidence: 87, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Unknown", total_ptps: 5, avg_confidence: 83, failed_ptps: 1, accuracy_pct: 80 },
-      { agent: "AI Collections Analyzer", total_ptps: 3, avg_confidence: 85, failed_ptps: 1, accuracy_pct: 66.67 },
-      { agent: "Chase Bank Collections Agent", total_ptps: 3, avg_confidence: 81.67, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "AI Collections Agent", total_ptps: 3, avg_confidence: 85, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "string", total_ptps: 2, avg_confidence: 82.5, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Chase Bank Collections", total_ptps: 2, avg_confidence: 75, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Krshna", total_ptps: 2, avg_confidence: 92.5, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Downtown Credit Agent", total_ptps: 2, avg_confidence: 80, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Alex", total_ptps: 2, avg_confidence: 81, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "AI Collections Analyst", total_ptps: 1, avg_confidence: 90, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "John Doe", total_ptps: 1, avg_confidence: 65, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Prakash", total_ptps: 1, avg_confidence: 85, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "AI Collections Analyser", total_ptps: 1, avg_confidence: 85, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Sachin", total_ptps: 1, avg_confidence: 80, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Not provided", total_ptps: 1, avg_confidence: 65, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Raajesh", total_ptps: 1, avg_confidence: 85, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Downtown Credit Collections", total_ptps: 1, avg_confidence: 88, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Saljit Kumar", total_ptps: 1, avg_confidence: 85, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Krshna Kumar", total_ptps: 1, avg_confidence: 85, failed_ptps: 0, accuracy_pct: 100 },
-      { agent: "Neha", total_ptps: 1, avg_confidence: 75, failed_ptps: 0, accuracy_pct: 100 }
-  ];
-
-  const emptyVitalSigns = {
-      callVolume: 0,
-      reachability: "0%",
-      conversion: "0%",
-      qualityScore: "0%",
-  };
-
-  const emptyCallingStatus = [
-      { status: "Connect", count: 0, percent: 0 },
-      { status: "Not Connect", count: 0, percent: 0 },
-  ];
-
-  const emptyFunnelAnalysis = [
-      { name: "Call Drop", value: 0 },
-      { name: "PTP", value: 0 },
-      { name: "Call Back", value: 0 },
-      { name: "Language Issue", value: 0 },
-      { name: "NI to Pay", value: 0 },
-  ];
-
-  const emptyQualityAnalysis = [
-      { name: "Loan details confirm", value: 0 },
-      { name: "Objection handling", value: 0 },
-      { name: "Urgency created", value: 0 },
-      { name: "Financial explanation", value: 0 },
-      { name: "Alternate payment option", value: 0 },
-      { name: "Opening & closing correct", value: 0 },
-      { name: "No rude tone", value: 0 },
-      { name: "Total Score", value: 0 },
-  ];
-
-  const emptySummaryData = {
-      total_ptps: 0,
-      low_confidence: 0,
-      high_confidence: 0,
-      follow_up_cases: 0,
-  };
-
-  const emptyFollowUpBuckets = [
-      { name: "Same Month", value: Math.round(emptySummaryData.follow_up_cases * 0.3) },
-      { name: "Next Month", value: Math.round(emptySummaryData.follow_up_cases * 0.7) }
-  ];
-
-  const callingStatusData = isTodaySelected() ? callingStatus : emptyCallingStatus;
-  const vitalSignsData = isTodaySelected() ? vitalSigns : emptyVitalSigns;
-  const funnelData = isTodaySelected() ? funnelAnalysis : emptyFunnelAnalysis;
-  const qualityData = isTodaySelected() ? qualityAnalysis : emptyQualityAnalysis;
-  const summaryDataRecord = isTodaySelected() ? summaryData : emptySummaryData;
-  const followUpBucketsData = isTodaySelected() ? followUpBuckets : emptyFollowUpBuckets;
-
-  const insightTableData = isTodaySelected() ? insightStaticData : [];
-  const agentTableData = isTodaySelected() ? agentAccuracyStaticData : [];
 
 
   return (
@@ -567,27 +460,27 @@ setLoading1(true);
             gap: 12
           }}>
             <div style={cardStyle("#2563eb")}>
-              <h2>{vitalSignsData.callVolume}</h2>
-              <p>Call Volume</p>
+              <h2>{vitalSigns.callVolume}</h2>
+              <p>Card 1: Call Volume</p>
               <small>Total Attempts</small>
             </div>
 
             <div style={cardStyle("#9333ea")}>
-              <h2>{vitalSignsData.reachability}</h2>
-              <p>Reachability</p>
-              <small>Connect Rate</small>
+              <h2>{vitalSigns.reachability}</h2>
+              <p>Card 2: Reachability</p>
+              <small>Connect Rate (Low)</small>
             </div>
 
             <div style={cardStyle("#16a34a")}>
-              <h2>{vitalSignsData.conversion}</h2>
-              <p>Conversion</p>
+              <h2>{vitalSigns.conversion}</h2>
+              <p>Card 3: Conversion</p>
               <small>PTP Conversion</small>
             </div>
 
             <div style={cardStyle("#f59e0b")}>
-              <h2>{vitalSignsData.qualityScore}</h2>
-              <p>Average Quality Score</p>
-              <small>Avg Quality Score</small>
+              <h2>{vitalSigns.qualityScore}</h2>
+              <p>Card 4: Quality Score</p>
+              <small>Overall Compliance</small>
             </div>
           </div>
         </div>
@@ -602,37 +495,36 @@ setLoading1(true);
           }}
         >
           <div style={cardStyle("#1e88e5")}>
-            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summaryDataRecord.total_ptps}</div>
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summary?.total_ptps ?? 0}</div>
             <div>Total PTPs Collected</div>
           </div>
           <div style={cardStyle("#e53935")}>
-            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summaryDataRecord.low_confidence}</div>
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summary?.low_confidence ?? 0}</div>
             <div>
               High-Risk PTPs
               <br />
-              <small>Low Confidence</small>
+              (Low Confidence)
             </div>
           </div>
           <div style={cardStyle("#43a047")}>
-            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summaryDataRecord.high_confidence}</div>
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summary?.high_confidence ?? 0}</div>
             <div>
               Genuine PTPs
               <br />
-              <small>High Confidence</small>
+              (High Confidence)
             </div>
           </div>
           <div style={cardStyle("#fb8c00")}>
-            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summaryDataRecord.follow_up_cases}</div>
+            <div style={{ fontSize: "24px", fontWeight: "bold" }}>{summary?.follow_up_cases ?? 0}</div>
             <div>
               Follow-Up Call
               <br />
-              <small>Priority Cases</small>
+              Priority Cases
             </div>
           </div>
         </div>
 
         {/* Charts */}
-        {/*
         <div
           style={{
             display: "grid",
@@ -646,34 +538,34 @@ setLoading1(true);
               PTP Confidence Distribution
             </div>
             <div
-              style={{
-                height: "265px",
-                backgroundColor: "#374151",
-                borderRadius: "6px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {barData.length === 0 || barData.every((item) => item.count === 0) ? (
-                <div style={{ color: "white", fontSize: "16px" }}>No data available</div>
-              ) : (
-                <BarChart width={350} height={200} data={barData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="confidence" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count">
-                    {barData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={barColors[index % barColors.length]}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              )}
-            </div>
+  style={{
+    height: "265px",
+    backgroundColor: "#374151",
+    borderRadius: "6px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  }}
+>
+  {barData.length === 0 || barData.every((item) => item.count === 0) ? (
+    <div style={{ color: "white", fontSize: "16px" }}>No data available</div>
+  ) : (
+    <BarChart width={350} height={200} data={barData}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="confidence" />
+      <YAxis />
+      <Tooltip />
+      <Bar dataKey="count">
+        {barData.map((entry, index) => (
+          <Cell
+            key={`cell-${index}`}
+            fill={barColors[index % barColors.length]}
+          />
+        ))}
+      </Bar>
+    </BarChart>
+  )}
+</div>
 
           </div>
           <div style={sectionStyle}>
@@ -681,49 +573,49 @@ setLoading1(true);
               Sentiment & Language Insights
             </div>
             <div
-              style={{
-                height: "265px",
-                backgroundColor: "#374151",
-                borderRadius: "6px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {pieData.length === 0 || pieData.every((item) => item.value === 0) ? (
-                <div style={{ color: "white", fontSize: "16px" }}>No data available</div>
-              ) : (
-                <PieChart width={350} height={262}>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={70}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={pieColors[index % pieColors.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Legend />
-                </PieChart>
-              )}
-            </div>
+  style={{
+    height: "265px",
+    backgroundColor: "#374151",
+    borderRadius: "6px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  }}
+>
+  {pieData.length === 0 || pieData.every((item) => item.value === 0) ? (
+    <div style={{ color: "white", fontSize: "16px" }}>No data available</div>
+  ) : (
+    <PieChart width={350} height={262}>
+      <Pie
+        data={pieData}
+        cx="50%"
+        cy="50%"
+        labelLine={false}
+        outerRadius={70}
+        fill="#8884d8"
+        dataKey="value"
+        label
+      >
+        {pieData.map((entry, index) => (
+          <Cell
+            key={`cell-${index}`}
+            fill={pieColors[index % pieColors.length]}
+          />
+        ))}
+      </Pie>
+      <Legend />
+    </PieChart>
+  )}
+</div>
+
           </div>
         </div>
-        */}
 
         {/* ================= CHARTS ================= */}
 
         <div style={{
           display:"grid",
-          gridTemplateColumns:"1fr 1fr",
+          gridTemplateColumns:"1fr 1fr 1fr",
           gap:16,
           marginBottom: "20px"
         }}>
@@ -732,21 +624,19 @@ setLoading1(true);
         <div style={sectionStyle}>
         <h4>Call Status</h4>
 
-        <div style={{ display: "flex", justifyContent: "center" }}>
         <PieChart width={300} height={250}>
           <Pie
-            data={callingStatusData}
+            data={callingStatus}
             dataKey="percent"
             nameKey="status"
             outerRadius={90}
-            label={({ percent }) => `${percent}%`}
+            label
           >
             <Cell fill="#60a5fa"/>
             <Cell fill="#fb923c"/>
           </Pie>
           <Legend/>
         </PieChart>
-        </div>
 
         </div>
 
@@ -754,60 +644,30 @@ setLoading1(true);
         <div style={sectionStyle}>
         <h4>Funnel Analysis</h4>
 
-        <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={funnelData}>
+        <BarChart width={300} height={250} data={funnelAnalysis}>
         <CartesianGrid strokeDasharray="3 3"/>
         <XAxis dataKey="name"/>
         <YAxis/>
         <Tooltip/>
         <Bar dataKey="value" fill="#60a5fa"/>
         </BarChart>
-        </ResponsiveContainer>
 
-        </div>
         </div>
 
         {/* Quality Line */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-          marginBottom: "20px"
-        }}>
         <div style={sectionStyle}>
-        <h4>Average Quality Score</h4>
+        <h4>Quality & Hygiene Analysis</h4>
 
-        <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={qualityData}>
+        <LineChart width={300} height={250} data={qualityAnalysis}>
         <CartesianGrid strokeDasharray="3 3"/>
         <XAxis dataKey="name"/>
         <YAxis/>
         <Tooltip/>
         <Line type="monotone" dataKey="value" stroke="#3b82f6"/>
         </LineChart>
-        </ResponsiveContainer>
 
         </div>
 
-        <div style={sectionStyle}>
-          <h4>Follow-Up Call Distribution</h4>
-
-          <div style={{ display: "flex", justifyContent: "center" }}>
-          <PieChart width={300} height={250}>
-            <Pie
-              data={followUpBucketsData}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={90}
-              label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-            >
-              <Cell fill="#34d399" />
-              <Cell fill="#f87171" />
-            </Pie>
-            <Legend />
-          </PieChart>
-          </div>
-        </div>
         </div>
 
         {/* ================= TABLES ================= */}
@@ -831,22 +691,13 @@ setLoading1(true);
               </tr>
             </thead>
             <tbody>
-              {callingStatusData.map((row,i)=>(
+              {callingStatus.map((row,i)=>(
                 <tr key={i}>
                   <td>{row.status}</td>
                   <td>{row.count}</td>
                   <td>{row.percent}%</td>
                 </tr>
               ))}
-              <tr style={{ fontWeight: "bold" }}>
-                <td>Total Calls</td>
-                <td>
-                  {callingStatusData.reduce((sum, item) => sum + item.count, 0)}
-                </td>
-                <td>
-                  {callingStatusData.reduce((sum, item) => sum + item.percent, 0)}%
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -856,7 +707,7 @@ setLoading1(true);
           <h4>Funnel Analysis</h4>
           <table style={tableStyle}>
             <tbody>
-              {funnelData.map((row,i)=>(
+              {funnelAnalysis.map((row,i)=>(
                 <tr key={i}>
                   <td>{row.name}</td>
                   <td>{row.value}</td>
@@ -868,10 +719,10 @@ setLoading1(true);
 
         {/* Quality */}
         <div style={sectionStylenew}>
-          <h4>Average Quality Score</h4>
+          <h4>Quality & Hygiene Analysis</h4>
           <table style={tableStyle}>
             <tbody>
-              {qualityData.map((row,i)=>(
+              {qualityAnalysis.map((row,i)=>(
                 <tr key={i}>
                   <td>{row.name}</td>
                   <td>{row.value}%</td>
@@ -906,8 +757,8 @@ setLoading1(true);
                 </tr>
               </thead>
               <tbody>
-                  {insightTableData.length > 0 ? (
-                    insightTableData.map((item, index) => (
+                  {insightData.length > 0 ? (
+                    insightData.map((item, index) => (
                       <tr key={index}>
                         <td style={thTdStyle}>{item.date}</td>
                         <td style={thTdStyle}>{item.agent}</td>
@@ -941,8 +792,8 @@ setLoading1(true);
                 </tr>
               </thead>
               <tbody>
-                {agentTableData.length > 0 ? (
-                  agentTableData.map((item, index) => (
+                {agentAccuracyData.length > 0 ? (
+                  agentAccuracyData.map((item, index) => (
                     <tr key={index}>
                       <td style={thTdStyle}>{item.agent}</td>
                       <td style={thTdStyle}>{item.total_ptps}</td>

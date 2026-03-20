@@ -115,7 +115,8 @@ useEffect(() => {
               "Calling",
               "Collection",
               "Service",
-              "Sales"
+              "Sales",
+              "Audit Config"
             ];
 
 

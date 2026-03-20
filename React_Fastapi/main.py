@@ -30,6 +30,11 @@ from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 # from apscheduler.schedulers.background import BackgroundScheduler
 
+from router.dummy_api import router as dummy_router
+from router.shopify import router as shopify_router
+from router.cdr_webhook import router as cdr_router
+from router.callmaster_config import router as callmaster_config
+
 app = FastAPI()
 
 SECRET_KEY = "your_secret_key"
@@ -61,6 +66,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(dashboard3_router)
+
+app.include_router(dummy_router, tags=["Dummy Data"])
+app.include_router(shopify_router, tags=["Shopify API"])
+
+app.include_router(cdr_router)
+app.include_router(callmaster_config)
+
 # MySQL Database Connection (replace with your actual credentials)
 # SQL_DB_URL = "mysql+pymysql://root:Hello%40123@localhost/my_db?charset=utf8mb4"
 SQL_DB_URL = "mysql+pymysql://root:dial%40mas123@172.12.10.22/ai_audit?charset=utf8mb4"
@@ -88,7 +100,7 @@ def get_db2():
         db.close()
 
 
-#########  Third DB
+######### ï¿½Third DB
 
 DATABASE_URL3 = "mysql+pymysql://root:vicidialnow@192.168.10.6/db_external"
 
