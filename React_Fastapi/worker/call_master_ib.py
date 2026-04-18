@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
 
 
-MAX_WORKERS = 3
+MAX_WORKERS = 1
 
 # ---------------- DB CONFIG ----------------
 CENTRAL_DB = {
@@ -124,6 +124,15 @@ def process_single_config(config):
         campaign_ids_clean = [c.strip().strip("'") for c in campaign_ids]
         campaign_ids_str = ",".join([f"'{c}'" for c in campaign_ids_clean])
 
+        last_processed_at = config.get("last_processed_at")
+
+        if not last_processed_at:
+            # fallback: only last 30 minutes (first run safety)
+            central_cursor.execute("SELECT NOW()")
+            db_now = central_cursor.fetchone()[0]
+
+            last_processed_at = db_now - timedelta(minutes=30)
+
         # audit logic
         remaining, agents = calculate_remaining(config, target_cursor)
         if remaining <= 0:
@@ -161,22 +170,28 @@ def process_single_config(config):
                 ON vc.lead_id = r.lead_id
                AND DATE(vc.call_date) = DATE(r.start_time)
             WHERE vc.campaign_id IN ({campaign_ids_str})
-                AND vc.call_date >= CURDATE()
-                AND vc.call_date < CURDATE() + INTERVAL 1 DAY
-                AND vc.call_date <= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+                AND vc.call_date >= %s
+                AND vc.call_date <= NOW() - INTERVAL 2 MINUTE
                 {agent_filter}
                 {duration_filter}
                 {time_filter}
                 AND vc.user != 'VDCL'
-            ORDER BY vc.call_date DESC
+            ORDER BY vc.call_date ASC
             LIMIT %s
         """
 
-        dialer_cursor.execute(query, (remaining,))
+        batch_limit = min(remaining, 20)
+
+        dialer_cursor.execute(query, (last_processed_at, batch_limit))
         rows = dialer_cursor.fetchall()
 
         if not rows:
             return
+
+        if len(rows) < batch_limit:
+            update_time = rows[-1]["call_date"]  # last row (ASC)
+        else:
+            update_time = rows[-1]["call_date"]
 
         # 🚀 BULK INSERT
         insert_query = """
@@ -207,6 +222,15 @@ def process_single_config(config):
 
         target_cursor.executemany(insert_query, data)
         target_conn.commit()
+
+        # only update AFTER successful insert
+        central_cursor.execute("""
+            UPDATE audit_config
+            SET last_processed_at = %s
+            WHERE call_type = 'inbound' AND client_id = %s
+        """, (update_time, client_id))
+
+        central_conn.commit()
 
         print(f"✅ Inserted {len(data)} rows for client {client_id}")
 
