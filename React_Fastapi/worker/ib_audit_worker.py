@@ -50,22 +50,67 @@ def deepgram_transcribe(audio_url: str) -> str:
         if not audio_url:
             return ""
 
-        audio_res = requests.get(audio_url, timeout=20)
-        if audio_res.status_code != 200:
+        session = requests.Session()
+
+        headers_req = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "*/*",
+            "Referer": audio_url
+        }
+
+        # 🔥 Retry logic (important)
+        for attempt in range(3):
+            try:
+                audio_res = session.get(
+                    audio_url,
+                    headers=headers_req,
+                    timeout=60,
+                    verify=False   # 🔥 important for internal HTTPS (172.x)
+                )
+
+                if audio_res.status_code == 200:
+                    audio_bytes = audio_res.content
+                    break
+
+                logging.warning(f"Attempt {attempt+1} failed: {audio_res.status_code}")
+                time.sleep(2)
+
+            except Exception as e:
+                logging.warning(f"Retry {attempt+1} error: {e}")
+                time.sleep(2)
+        else:
+            logging.error(f"Audio fetch failed completely: {audio_url}")
             return ""
 
-        headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
-        params = {"punctuate": "true", "model": "nova"}
+        if not audio_bytes:
+            logging.error(f"Empty audio file: {audio_url}")
+            return ""
+
+        # ✅ Detect type
+        content_type = "audio/mpeg"
+        if audio_url.lower().endswith(".wav"):
+            content_type = "audio/wav"
+
+        headers = {
+            "Authorization": f"Token {DEEPGRAM_API_KEY}",
+            "Content-Type": content_type
+        }
+
+        params = {
+            "punctuate": "true",
+            "model": "nova"
+        }
 
         res = requests.post(
             "https://api.deepgram.com/v1/listen",
             headers=headers,
             params=params,
-            data=audio_res.content,
-            timeout=30
+            data=audio_bytes,
+            timeout=180
         )
 
         if res.status_code != 200:
+            logging.error(f"Deepgram failed: {res.text}")
             return ""
 
         return (

@@ -57,13 +57,21 @@ def calculate_remaining(config, target_cursor):
 def build_recording_url_expr(dialer_ip):
     ip_underscore = dialer_ip.replace(".", "_")
 
+    special_ips = {"192.168.11.246", "192.168.10.4", "192.168.10.25"}
+
+    # 🔥 special case
+    if dialer_ip in special_ips:
+        base_ip = "192.168.10.3"
+    else:
+        base_ip = "192.168.11.251"
+
     return f"""
         IFNULL(
             REPLACE(
                 r.location,
                 'http://{dialer_ip}/RECORDINGS/MP3/',
                 CONCAT(
-                    'http://192.168.11.251/{ip_underscore}/',
+                    'http://{base_ip}/{ip_underscore}/',
                     DATE_FORMAT(DATE(vc.call_date), '%Y%m%d'),
                     '/'
                 )
@@ -107,7 +115,16 @@ def process_single_config(config):
         if not campaign_ids:
             return
 
-        campaign_ids_clean = [c.strip().strip("'") for c in campaign_ids]
+        campaign_ids_clean = [
+            str(c).strip().strip("'")
+            for c in campaign_ids
+            if c is not None and str(c).strip()
+        ]
+
+        if not campaign_ids_clean:
+            print(f"⚠️ No valid campaigns for client {client_id}")
+            return
+
         campaign_ids_str = ",".join([f"'{c}'" for c in campaign_ids_clean])
 
         last_processed_at = config.get("last_processed_at")
@@ -116,12 +133,25 @@ def process_single_config(config):
             central_cursor.execute("SELECT NOW()")
             db_now = central_cursor.fetchone()[0]
 
-            last_processed_at = db_now - timedelta(minutes=30)
+            last_processed_at = db_now - timedelta(days=1)
 
         # remaining
         remaining, agents = calculate_remaining(config, target_cursor)
+
         if remaining <= 0:
-            print(f"⏭ Skipping client {client_id}")
+            print(f"⏭ Skipping client {client_id} (quota full)")
+
+            # move cursor forward so it doesn't get stuck
+            new_time = last_processed_at + timedelta(minutes=2)
+
+            central_cursor.execute("""
+                UPDATE audit_config
+                SET last_processed_at = %s
+                WHERE call_type = 'outbound' AND client_id = %s
+            """, (new_time, client_id))
+
+            central_conn.commit()
+
             return
 
         # agent filter
@@ -157,26 +187,54 @@ def process_single_config(config):
                 ON vc.uniqueid = r.vicidial_id
                AND DATE(vc.call_date) = DATE(r.start_time)
             WHERE vc.campaign_id IN ({campaign_ids_str})
-                AND vc.call_date >= %s
-                AND vc.call_date <= NOW() - INTERVAL 2 MINUTE
+                AND vc.call_date > %s
+                AND vc.call_date <= %s
                 {agent_filter}
                 {duration_filter}
                 {time_filter}
                 AND vc.status != 'vm'
-                AND r.location IS NOT NULL
             ORDER BY vc.call_date ASC
             LIMIT %s
         """
 
-        batch_limit = min(remaining, 20)
+        batch_limit = min(remaining, 100)
 
-        dialer_cursor.execute(query, (last_processed_at, batch_limit))
+        upper_bound = datetime.now() - timedelta(minutes=15)
+
+        # 🚫 Prevent invalid window (VERY IMPORTANT)
+        if last_processed_at >= upper_bound:
+            print(f"⏳ Skipping client {client_id} (waiting for safe window)")
+            return
+
+        dialer_cursor.execute(query, (last_processed_at, upper_bound, batch_limit))
         rows = dialer_cursor.fetchall()
 
         if not rows:
+            print(f"\n⚠️ OUTBOUND NO DATA for client {client_id}")
+            print(f"   last_processed_at: {last_processed_at}")
+
+            upper_bound = datetime.now() - timedelta(minutes=15)
+
+            # 🚫 If cursor already ahead → do nothing
+            if last_processed_at >= upper_bound:
+                print(f"⏳ Waiting for data window for client {client_id}")
+                return
+
+            # move cursor slightly forward (like inbound)
+            new_time = last_processed_at + timedelta(minutes=2)
+
+            central_cursor.execute("""
+                UPDATE audit_config
+                SET last_processed_at = %s
+                WHERE call_type = 'outbound' AND client_id = %s
+            """, (new_time, client_id))
+
+            central_conn.commit()
+
+            print(f"🔄 OUTBOUND Cursor reset → {new_time}\n")
             return
 
-        update_time = rows[-1]["call_date"]
+        update_time = max(row["call_date"] for row in rows)
 
         insert_query = """
             INSERT IGNORE INTO call_logs (

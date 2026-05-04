@@ -51,22 +51,99 @@ def deepgram_transcribe(audio_url: str) -> str:
         if not audio_url:
             return ""
 
-        audio_res = requests.get(audio_url, timeout=20)
-        if audio_res.status_code != 200:
+        session = requests.Session()
+
+        headers_req = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "*/*",
+            "Referer": "http://192.168.10.9/",
+            "Connection": "keep-alive"
+        }
+
+        def fetch(url):
+            return session.get(
+                url,
+                headers=headers_req,
+                timeout=60,
+                verify=False   # 🔥 SSL safety
+            )
+
+        audio_res = None
+
+        # 🔁 RETRY LOOP
+        for attempt in range(3):
+            try:
+                audio_res = fetch(audio_url)
+
+                # 🔴 HANDLE 403
+                if audio_res.status_code == 403:
+                    alt_url = audio_url.replace("/MP3/", "/").replace(".mp3", ".wav")
+                    logging.warning(f"[Attempt {attempt+1}] 403 → WAV fallback: {alt_url}")
+                    audio_res = fetch(alt_url)
+
+                # 🔴 HANDLE 404
+                if audio_res.status_code == 404:
+                    match = re.search(r"(192\.168\.\d+\.\d+)", audio_url)
+                    if match:
+                        ip = match.group(1)
+                        ip_underscore = ip.replace(".", "_")
+
+                        filename = audio_url.split("/")[-1]
+
+                        date_match = re.search(r"_(\d{8})-", filename)
+                        date_part = date_match.group(1) if date_match else datetime.now().strftime("%Y%m%d")
+
+                        proxy_url = f"http://192.168.11.251/{ip_underscore}/{date_part}/{filename}"
+
+                        logging.warning(f"[Attempt {attempt+1}] 404 → proxy: {proxy_url}")
+                        audio_res = fetch(proxy_url)
+
+                # ✅ SUCCESS
+                if audio_res.status_code == 200:
+                    break
+
+                logging.warning(f"[Attempt {attempt+1}] Failed: {audio_res.status_code}")
+                time.sleep(2)
+
+            except Exception as e:
+                logging.warning(f"[Attempt {attempt+1}] Error: {e}")
+                time.sleep(2)
+
+        else:
+            logging.error(f"Audio fetch failed after retries: {audio_url}")
             return ""
 
-        headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
-        params = {"punctuate": "true", "model": "nova"}
+        audio_bytes = audio_res.content
+
+        if not audio_bytes:
+            logging.error(f"Empty audio file: {audio_url}")
+            return ""
+
+        # 🎧 Detect content type
+        content_type = "audio/mpeg"
+        if audio_url.lower().endswith(".wav"):
+            content_type = "audio/wav"
+
+        headers = {
+            "Authorization": f"Token {DEEPGRAM_API_KEY}",
+            "Content-Type": content_type
+        }
+
+        params = {
+            "punctuate": "true",
+            "model": "nova"
+        }
 
         res = requests.post(
             "https://api.deepgram.com/v1/listen",
             headers=headers,
             params=params,
-            data=audio_res.content,
-            timeout=30
+            data=audio_bytes,
+            timeout=180
         )
 
         if res.status_code != 200:
+            logging.error(f"Deepgram failed: {res.text}")
             return ""
 
         return (
@@ -164,6 +241,14 @@ def worker_loop():
             if not row:
                 logging.info("No outbound calls...")
                 time.sleep(10)
+                continue
+
+            # ⏱ Skip fresh calls (CRITICAL FIX)
+            age_seconds = (datetime.now() - row["start_time"]).total_seconds()
+
+            if age_seconds < 900:  # 15 minutes
+                logging.info(f"⏳ Skipping fresh call {row['id']} ({int(age_seconds)}s old)")
+                time.sleep(2)
                 continue
 
             client_id = row["client_id"]
