@@ -203,3 +203,79 @@ async def save_apr(request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+
+@router.post("/cdr/finnable")
+async def save_finnable_call_log(request: Request):
+    data = await request.json()
+
+    try:
+        duration = int(data.get("duration", 0))
+
+        # Skip calls less than 120 sec
+        if duration < 120:
+            return {
+                "status": "skipped",
+                "message": "Duration less than 120 seconds"
+            }
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+        INSERT INTO call_logs (
+            client_id,
+            lead_id,
+            call_id,
+            agent_id,
+            start_time,
+            end_time,
+            call_type,
+            duration,
+            recording_path,
+            created_at
+        )
+        VALUES (
+            497,
+            %(lead_id)s,
+            %(call_id)s,
+            %(agent_id)s,
+            %(start_time)s,
+            %(end_time)s,
+            'outbound',
+            %(duration)s,
+            %(recording_path)s,
+            NOW()
+        )
+        """
+
+        insert_data = {
+            "lead_id": data.get("lead_id"),
+            "call_id": data.get("call_id"),
+            "agent_id": data.get("agent_id"),
+            "start_time": data.get("start_time"),
+            "end_time": data.get("end_time"),
+            "duration": duration,
+            "recording_path": data.get("recording_path", ""),
+        }
+
+        cursor.execute(query, insert_data)
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return {"status": "success"}
+
+    except mysql.connector.IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="Duplicate entry for client_id + lead_id + start_time"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

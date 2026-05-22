@@ -263,7 +263,7 @@ def worker_loop():
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """, (
                     client_id,
-                    row["lead_id"],
+                    row["call_id"],
                     row["lead_id"],
                     row["agent_id"],
                     row["start_time"],
@@ -384,7 +384,7 @@ def worker_loop():
             """, (
 
                 client_id,
-                row["lead_id"],
+                row["call_id"],
                 row["lead_id"],
                 row["agent_id"],
                 row["start_time"],

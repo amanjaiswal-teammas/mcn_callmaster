@@ -142,15 +142,22 @@ def process_single_config(config):
             print(f"⏭ Skipping client {client_id} (quota full)")
 
             # move cursor forward so it doesn't get stuck
-            new_time = last_processed_at + timedelta(minutes=2)
+            # new_time = last_processed_at + timedelta(minutes=2)
+
+            next_day_10am = (
+                    datetime.combine(datetime.now().date(), datetime.min.time())
+                    + timedelta(days=1, hours=10)
+            )
 
             central_cursor.execute("""
                 UPDATE audit_config
                 SET last_processed_at = %s
                 WHERE call_type = 'inbound' AND client_id = %s
-            """, (new_time, client_id))
+            """, (next_day_10am, client_id))
 
             central_conn.commit()
+
+            print(f"⏭ Cursor moved to next day 10AM for client {client_id} → {next_day_10am}")
 
             return
 
@@ -176,6 +183,7 @@ def process_single_config(config):
                 vc.user,
                 vc.call_date,
                 vc.lead_id,
+                vc.phone_number,
                 vc.length_in_sec,
                 vc.start_epoch,
                 vc.end_epoch,
@@ -248,7 +256,7 @@ def process_single_config(config):
             data.append((
                 client_id,
                 row["lead_id"],
-                row["lead_id"],
+                row["phone_number"],
                 row["user"],
                 datetime.fromtimestamp(row["start_epoch"]),
                 datetime.fromtimestamp(row["end_epoch"]),

@@ -289,7 +289,7 @@ def worker_loop():
                     end_epoch,
                     row["start_time"],
                     row["agent_id"],
-                    row["lead_id"],
+                    row["call_id"],
                     "",
                     datetime.now()
                 ))
@@ -318,7 +318,7 @@ def worker_loop():
                 "end_epoch": end_epoch,
                 "CallDate": row["start_time"],
                 "AgentName": row["agent_id"],
-                "MobileNo": row["lead_id"],
+                "MobileNo": row["call_id"],
 
                 "CallDisposition": None,
 
