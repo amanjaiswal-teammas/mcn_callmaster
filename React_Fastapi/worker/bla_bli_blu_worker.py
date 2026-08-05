@@ -8,6 +8,8 @@ import re
 from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 load_dotenv()
 
@@ -101,39 +103,161 @@ def get_prompt():
 
 # ---------------- DEEPGRAM ----------------
 
-def deepgram_transcribe(audio_url):
+# def deepgram_transcribe(audio_url):
+#
+#     if not audio_url:
+#         return ""
+#
+#     try:
+#         audio = requests.get(audio_url, timeout=30)
+#
+#         if audio.status_code != 200 or len(audio.content) < 1000:
+#             logging.warning("Invalid audio")
+#             return ""
+#
+#         headers = {
+#             "Authorization": f"Token {DEEPGRAM_API_KEY}",
+#             "Content-Type": "audio/mpeg"
+#         }
+#
+#         params = {
+#             "model": "nova-2",
+#             "detect_language": "true",
+#             "diarize": "true",
+#             "smart_format": "true",
+#             "punctuate": "true"
+#         }
+#
+#         res = requests.post(
+#             "https://api.deepgram.com/v1/listen",
+#             headers=headers,
+#             params=params,
+#             data=audio.content,
+#             timeout=(30, 600)
+#         )
+#
+#         if res.status_code != 200:
+#             logging.error(res.text)
+#             return ""
+#
+#         return (
+#             res.json()
+#             .get("results", {})
+#             .get("channels", [{}])[0]
+#             .get("alternatives", [{}])[0]
+#             .get("transcript", "")
+#         )
+#
+#     except Exception as e:
+#         logging.error(f"Deepgram error: {e}")
+#         return ""
 
+
+
+
+def deepgram_transcribe(audio_url):
     if not audio_url:
         return ""
 
     try:
-        audio = requests.get(audio_url, timeout=30)
+        # Create session with retry support
+        session = requests.Session()
 
-        if audio.status_code != 200 or len(audio.content) < 1000:
-            logging.warning("Invalid audio")
+        retries = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=["GET", "POST"]
+        )
+
+        session.mount("https://", HTTPAdapter(max_retries=retries))
+        session.mount("http://", HTTPAdapter(max_retries=retries))
+
+        # Browser-like headers
+        download_headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/138.0 Safari/537.36"
+            ),
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+        }
+
+        logging.info(f"Downloading audio: {audio_url}")
+
+        audio = session.get(
+            audio_url,
+            headers=download_headers,
+            timeout=60,
+            allow_redirects=True,
+            stream=False,
+        )
+
+        logging.info(
+            "Download Status=%s Size=%s Type=%s URL=%s",
+            audio.status_code,
+            len(audio.content),
+            audio.headers.get("Content-Type"),
+            audio.url,
+        )
+
+        if audio.status_code != 200:
+            logging.error("Download failed: %s", audio.text[:500])
             return ""
 
-        res = requests.post(
+        if len(audio.content) < 1000:
+            logging.error("Downloaded audio is too small (%s bytes)", len(audio.content))
+            return ""
+
+        # Optional: save failed files for debugging
+        # with open("/tmp/debug.mp3", "wb") as f:
+        #     f.write(audio.content)
+
+        dg_headers = {
+            "Authorization": f"Token {DEEPGRAM_API_KEY}",
+            "Content-Type": audio.headers.get("Content-Type", "audio/mpeg"),
+        }
+
+        params = {
+            "model": "nova-2",
+            "detect_language": "true",
+            "diarize": "true",
+            "smart_format": "true",
+            "punctuate": "true",
+        }
+
+        logging.info("Sending audio to Deepgram...")
+
+        res = session.post(
             "https://api.deepgram.com/v1/listen",
-            headers={"Authorization": f"Token {DEEPGRAM_API_KEY}"},
-            params={"punctuate": "true", "model": "nova"},
-            data=audio.content
+            headers=dg_headers,
+            params=params,
+            data=audio.content,
+            timeout=(30, 600),
         )
+
+        logging.info("Deepgram Status: %s", res.status_code)
 
         if res.status_code != 200:
-            logging.error(res.text)
+            logging.error("Deepgram Error: %s", res.text)
             return ""
 
-        return (
-            res.json()
-            .get("results", {})
-            .get("channels", [{}])[0]
-            .get("alternatives", [{}])[0]
-            .get("transcript", "")
+        data = res.json()
+
+        transcript = (
+            data.get("results", {})
+                .get("channels", [{}])[0]
+                .get("alternatives", [{}])[0]
+                .get("transcript", "")
         )
 
-    except Exception as e:
-        logging.error(f"Deepgram error: {e}")
+        logging.info("Transcript length: %s", len(transcript))
+
+        return transcript
+
+    except Exception:
+        logging.exception("Deepgram transcription failed")
         return ""
 
 
@@ -183,6 +307,9 @@ def worker():
             SELECT *
             FROM cdr_bla_bli_blu
             WHERE flag=0
+                AND created_at >= '2026-07-31 00:00:00'
+                AND total_call_duration >= 120
+                AND created_at <= NOW() - INTERVAL 5 MINUTE
             ORDER BY id ASC
             LIMIT 1
         """)
@@ -205,20 +332,20 @@ def worker():
                     f"{prompt}\n\nConversation:\n{transcription}"
                 )
 
-            duration_sec = time_to_seconds(row["total_call_duration"])
+            duration_sec = row["total_call_duration"]
 
             start_epoch = timestamp_epoch(row["date_time"])
             end_epoch = start_epoch + duration_sec
 
             # Set client_id based on campaign_name
-            if row["campaign_name"] in ("Outbound", "Personal"):
-                client_id_value = 493
-            else:
-                client_id_value = CLIENT_ID
+            # if row["campaign_name"] in ("Outbound", "Personal"):
+            #     client_id_value = 493
+            # else:
+            #     client_id_value = CLIENT_ID
 
             insert_data = {
 
-                "client_id": client_id_value,
+                "client_id": CLIENT_ID,
                 "campaign_id": row["campaign_name"],
                 "length_in_sec": duration_sec,
                 "start_epoch": start_epoch,
@@ -228,6 +355,11 @@ def worker():
                 "MobileNo": row["customer_number"],
 
                 "CallDisposition": row["disposition"],
+                "CompetitorName": gpt_data.get("CompetitorName"),
+                "TopNegativeWordsByAgent": gpt_data.get("TopNegativeWordsByAgent"),
+                "TopNegativeWordsByCustomer": gpt_data.get("TopNegativeWordsByCustomer"),
+                "NotInterestedReasonCallContext": gpt_data.get("NotInterestedReasonCallContext"),
+                "NotInterestedBucketReason": gpt_data.get("NotInterestedBucketReason"),
 
                 "Opening": gpt_data.get("Opening"),
                 "Offered": gpt_data.get("Offered"),

@@ -34,6 +34,8 @@ from router.dummy_api import router as dummy_router
 from router.shopify import router as shopify_router
 from router.cdr_webhook import router as cdr_router
 from router.callmaster_config import router as callmaster_config
+from router.ivr import router as ivr_router
+
 
 app = FastAPI()
 
@@ -72,6 +74,7 @@ app.include_router(shopify_router, tags=["Shopify API"])
 
 app.include_router(cdr_router)
 app.include_router(callmaster_config)
+app.include_router(ivr_router)
 
 # MySQL Database Connection (replace with your actual credentials)
 # SQL_DB_URL = "mysql+pymysql://root:Hello%40123@localhost/my_db?charset=utf8mb4"

@@ -245,11 +245,11 @@ def process_single_config(config):
 
         insert_query = """
             INSERT IGNORE INTO call_logs (
-                client_id, lead_id, call_id, agent_id,
+                client_id, campaign_id, lead_id, call_id, agent_id,
                 start_time, end_time, call_type,
                 duration, recording_path, created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
 
         data = []
@@ -258,6 +258,7 @@ def process_single_config(config):
         for row in rows:
             data.append((
                 client_id,
+                row["campaign_id"],
                 row["lead_id"],
                 row["phone_number"],
                 row["user"],

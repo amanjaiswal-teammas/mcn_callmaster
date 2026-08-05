@@ -97,8 +97,11 @@ def deepgram_transcribe(audio_url: str) -> str:
         }
 
         params = {
-            "punctuate": "true",
-            "model": "nova"
+            "model": "nova-2",
+            "detect_language": "true",
+            "diarize": "true",
+            "smart_format": "true",
+            "punctuate": "true"
         }
 
         res = requests.post(
@@ -106,7 +109,7 @@ def deepgram_transcribe(audio_url: str) -> str:
             headers=headers,
             params=params,
             data=audio_bytes,
-            timeout=180
+            timeout=(30, 600)
         )
 
         if res.status_code != 200:
@@ -124,6 +127,233 @@ def deepgram_transcribe(audio_url: str) -> str:
     except Exception as e:
         logging.error(f"Deepgram error: {e}")
         return ""
+
+
+
+# import tempfile
+# from faster_whisper import WhisperModel
+#
+# model = WhisperModel(
+#     "small",
+#     device="cpu",
+#     compute_type="int8",
+#     cpu_threads=4
+# )
+
+# def whisper_transcribe(audio_url: str) -> str:
+#     try:
+#         if not audio_url:
+#             return ""
+#
+#         session = requests.Session()
+#
+#         headers = {
+#             "User-Agent": "Mozilla/5.0"
+#         }
+#
+#         r = session.get(
+#             audio_url,
+#             headers=headers,
+#             timeout=120,
+#             verify=False
+#         )
+#
+#         if r.status_code != 200:
+#             logging.error(f"Unable to download audio: {r.status_code}")
+#             return ""
+#
+#         suffix = ".wav"
+#
+#         if audio_url.lower().endswith(".mp3"):
+#             suffix = ".mp3"
+#         elif audio_url.lower().endswith(".ogg"):
+#             suffix = ".ogg"
+#
+#         from pydub import AudioSegment
+#
+#         # Save original download
+#         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
+#             f.write(r.content)
+#             audio_path = f.name
+#
+#         # Convert to 16 kHz mono WAV
+#         wav_path = audio_path.rsplit(".", 1)[0] + ".wav"
+#
+#         audio = AudioSegment.from_file(audio_path)
+#
+#         logging.info(
+#             f"Original: rate={audio.frame_rate}, "
+#             f"channels={audio.channels}, "
+#             f"dBFS={audio.dBFS:.2f}"
+#         )
+#
+#         audio = (
+#             audio
+#             .set_frame_rate(16000)
+#             .set_channels(1)
+#         )
+#
+#         audio.export(wav_path, format="wav")
+#
+#         logging.info(f"Converted WAV: {wav_path}")
+#
+#         start = time.time()
+#
+#         segments, info = model.transcribe(
+#             wav_path,
+#             beam_size=5,
+#             best_of=5,
+#             vad_filter=False,
+#             condition_on_previous_text=True,
+#             language=None
+#         )
+#
+#         logging.info(f"Whisper took {time.time() - start:.2f} seconds")
+#
+#         logging.info(
+#             f"Language={info.language}, Probability={info.language_probability:.2f}"
+#         )
+#
+#         segments = list(segments)
+#
+#         logging.info(f"Segments: {len(segments)}")
+#
+#         for s in segments[:10]:
+#             logging.info(f"[{s.start:.2f}-{s.end:.2f}] {s.text}")
+#
+#         transcript = " ".join(s.text for s in segments)
+#
+#         for path in (audio_path, wav_path):
+#             try:
+#                 os.remove(path)
+#             except Exception:
+#                 pass
+#
+#         return transcript.strip()
+#
+#     except Exception as e:
+#         logging.exception(e)
+#         return ""
+
+
+import time
+import tempfile
+from pydub import AudioSegment
+
+GPU_WHISPER_URL = "http://103.35.164.249:8010/transcribe"
+
+
+def whisper_transcribe(audio_url: str) -> str:
+    try:
+
+        if not audio_url:
+            return ""
+
+        session = requests.Session()
+
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        r = session.get(
+            audio_url,
+            headers=headers,
+            timeout=120,
+            verify=False
+        )
+
+        if r.status_code != 200:
+            logging.error(f"Unable to download audio: {r.status_code}")
+            return ""
+
+        suffix = ".wav"
+
+        if audio_url.lower().endswith(".mp3"):
+            suffix = ".mp3"
+        elif audio_url.lower().endswith(".ogg"):
+            suffix = ".ogg"
+
+        # Save downloaded recording
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
+            f.write(r.content)
+            audio_path = f.name
+
+        wav_path = audio_path.rsplit(".", 1)[0] + ".wav"
+
+        from pydub.effects import normalize
+
+        audio = AudioSegment.from_file(audio_path)
+
+        audio = normalize(audio)
+
+        logging.info(
+            f"Original: rate={audio.frame_rate}, "
+            f"channels={audio.channels}, "
+            f"dBFS={audio.dBFS:.2f}"
+        )
+
+        audio = (
+            audio
+            .set_frame_rate(16000)
+            .set_channels(1)
+            .set_sample_width(2)
+        )
+
+        audio.export(
+            wav_path,
+            format="wav",
+            parameters=[
+                "-acodec", "pcm_s16le"
+            ]
+        )
+
+        logging.info(f"Converted WAV: {wav_path}")
+
+        # -----------------------------
+        # Send WAV to GPU Whisper Server
+        # -----------------------------
+        start = time.time()
+
+        with open(wav_path, "rb") as f:
+
+            response = requests.post(
+                GPU_WHISPER_URL,
+                files={
+                    "file": ("audio.wav", f, "audio/wav")
+                },
+                timeout=600
+            )
+
+        response.raise_for_status()
+
+        result = response.json()
+
+        logging.info(
+            f"GPU Whisper took {time.time()-start:.2f}s"
+        )
+
+        logging.info(
+            f"Language={result['language']} "
+            f"Probability={result['probability']}"
+        )
+
+        transcript = result.get("transcript", "").strip()
+
+        return transcript
+
+    except Exception as e:
+        logging.exception(e)
+        return ""
+
+    finally:
+
+        for path in [locals().get("audio_path"), locals().get("wav_path")]:
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+
 
 
 def send_to_gpt(prompt: str) -> dict:
@@ -241,7 +471,8 @@ def worker_loop():
                 )
                 continue
 
-            transcription = deepgram_transcribe(row["recording_path"])
+            # transcription = deepgram_transcribe(row["recording_path"])
+            transcription = whisper_transcribe(row["recording_path"])
 
             start_epoch = safe_timestamp(row["start_time"])
             end_epoch = safe_timestamp(row["end_time"])
@@ -295,6 +526,7 @@ def worker_loop():
             competitor = gpt_data.get("competitor_analysis", {})
             fraud = gpt_data.get("fraud_metrics", {})
             fraud_text = gpt_data.get("fraud_metrics_conversation", {})
+            customer_voc = gpt_data.get("customer_voc", {})
 
             # --------------------------------------------------
             # 🚀 FULL INSERT (MATCHING YOUR MAIN WORKER)
@@ -304,7 +536,8 @@ def worker_loop():
                     ClientId, MobileNo, lead_id, User, CallDate,
                     start_epoch, end_epoch, length_in_sec, Transcribe_Text,
 
-                    scenario, scenario1, scenario2, scenario3,
+                    scenario, scenario1, scenario2, scenario3,                    
+                    Social_Media_Phone_Number_Order_ID_Email_ID,
 
                     call_answered_within_5_seconds,
                     professionalism_maintained,
@@ -317,11 +550,15 @@ def worker_loop():
                     accurate_issue_probing,
                     proper_hold_procedure,
                     dead_air_under_10_seconds,
-                    proper_transfer_and_language,
-                    correct_and_complete_information,
                     further_assistance_offered,
                     proper_call_closure,
                     express_empathy,
+                    customer_concern_acknowledged,
+                    proper_transfer_and_language,
+                    case_escalated_correctly,
+                    address_recorded_completely,
+                    correct_and_complete_information,
+                    upselling_or_offers_suggested,
 
                     total_score, max_score, quality_percentage,
 
@@ -331,6 +568,13 @@ def worker_loop():
                     top_negative_words,
                     top_positive_words_agent,
                     top_negative_words_agent,
+                    
+                    customer_voc_logistic_positive,
+                    customer_voc_logistic_negative,
+                    customer_voc_agent_positive,
+                    customer_voc_agent_negative,
+                    customer_voc_product_positive,
+                    customer_voc_product_negative,
 
                     agent_english_cuss_words,
                     agent_english_cuss_count,
@@ -366,20 +610,23 @@ def worker_loop():
                     Financial_Fraud_Text,
                     Escalation_Failure_Text,
                     Collusion_Text,
-                    Policy_Communication_Failure_Text
+                    Policy_Communication_Failure_Text,
+                    call_recording
                 )
                 VALUES (
                     %s,%s,%s,%s,%s,%s,%s,%s,%s,
-                    %s,%s,%s,%s,
-                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,%s,
                     %s,%s,%s,
                     %s,
+                    %s,%s,%s,%s,%s,%s,
                     %s,%s,%s,%s,
                     %s,%s,%s,%s,%s,%s,%s,%s,
                     %s,%s,%s,%s,%s,%s,%s,
                     %s,%s,
                     %s,%s,%s,%s,%s,%s,%s,
-                    %s,%s,%s,%s,%s,%s,%s
+                    %s,%s,%s,%s,%s,%s,%s,%s
                 )
             """, (
 
@@ -397,23 +644,28 @@ def worker_loop():
                 classification.get("scenario1"),
                 classification.get("scenario2"),
                 classification.get("scenario3"),
+                classification.get("Social_Media_Phone_Number_Order_ID_Email_ID"),
 
-                quality.get("Did the agent follow the correct opening?"),
-                quality.get("Did the agent maintain professionalism without rude behavior?"),
-                quality.get("Did the agent use phrases that provide assurance or express appreciation?"),
-                quality.get("Did the agent use correct pronunciation and maintain clarity?"),
-                quality.get("Did the agent speak with appropriate enthusiasm without fumbling?"),
-                quality.get("Did the agent actively listen without unnecessary interruptions?"),
-                quality.get("Was the agent polite and free of sarcasm?"),
-                quality.get("Did the agent use proper grammar?"),
-                quality.get("Did the agent accurately probe to understand the issue?"),
-                quality.get("Did the agent inform the customer before placing them on hold using appropriate phrases?"),
-                quality.get("Did the agent thank the customer for being on line after retrieving the call?"),
-                quality.get("Was the call transferred after appropriate effort and with proper language?"),
-                quality.get("Did the agent provide correct and complete information?"),
-                quality.get("Did the agent clearly state timelines for resolution?"),
-                quality.get("Did the agent provide a proper closure, including asking if the customer has further concerns?"),
+                quality.get("Evaluate whether the agent answered or greeted the customer within 5 seconds of the call being connected. If the agent responded promptly within 5 seconds, assign 1. Assign 0 only if the initial response or greeting was delayed beyond 5 seconds without a valid system-related reason. If the response time cannot be fairly evaluated due to recording limitations, missing call connection audio, or technical issues, assign 1."),
+                quality.get("Evaluate whether the agent maintained a professional, courteous, and customer-focused demeanor throughout the conversation. The agent should communicate confidently, remain calm and respectful, avoid arguing, raising their voice, using inappropriate language, or displaying frustration, and consistently represent the company's standards of professionalism. The agent should also maintain a positive attitude, use appropriate business etiquette, and stay focused on resolving the customer's query. Minor conversational variations should not be considered a failure if the overall interaction remains professional. Assign 1 if the agent maintained professionalism throughout the call. Assign 0 only if the agent displayed unprofessional behavior, inappropriate language, disrespect, impatience, or conduct that negatively impacted the customer experience. If the parameter cannot be fairly evaluated due to poor audio quality or recording issues, assign 1."),
+                quality.get("Evaluate whether the agent appropriately expressed assurance or appreciation during the conversation whenever relevant. This includes thanking the customer for their patience, feedback, or information, and providing reassuring statements such as 'I understand', 'Don't worry', 'Rest assured', 'I'll help you with this', or similar phrases that build customer confidence. The agent is not required to use exact phrases, but should convey genuine appreciation or assurance where appropriate. If the conversation did not present a situation where assurance or appreciation was reasonably expected, assign 1. Assign 0 only if the parameter was applicable and the agent failed to provide any appropriate assurance or appreciation during the interaction."),
+                quality.get("Evaluate whether the agent spoke with clear pronunciation, proper articulation, and an understandable pace throughout the conversation. The agent should avoid mumbling, slurring words, speaking too fast or too slowly, and should maintain a clear, confident, and professional tone that is easy for the customer to understand. Minor accent differences should not be considered an issue if the speech remains understandable. Assign 1 if the agent's pronunciation and clarity were satisfactory throughout the call. Assign 0 only if poor pronunciation, unclear speech, excessive mumbling, or an inappropriate speaking pace made the conversation difficult to understand. If audio quality or recording issues prevent a fair evaluation, assign 1."),
+                quality.get("Evaluate whether the agent maintained an enthusiastic, confident, and engaging tone throughout the conversation. The agent should sound energetic, positive, and interested while speaking fluently without unnecessary hesitation, excessive filler words (such as 'uh', 'um', 'like'), repeated words, long pauses, or frequent fumbling. Minor natural pauses or brief hesitations should not be considered a failure. Assign 1 if the agent communicated confidently and maintained a professional level of enthusiasm with no significant fumbling. Assign 0 only if excessive hesitation, repeated fumbling, lack of confidence, or a noticeably dull or disengaged tone negatively impacted the customer interaction. If the parameter cannot be fairly evaluated due to poor audio quality or recording issues, assign 1."),
+                quality.get("Evaluate whether the agent demonstrated active listening throughout the conversation by allowing the customer to complete their statements without unnecessary interruptions, acknowledging the customer's queries or concerns appropriately, asking relevant probing or clarifying questions when needed, and responding accurately based on the customer's inputs. The agent should avoid ignoring customer statements, giving irrelevant responses, or repeatedly asking for information that was already provided. Minor interruptions due to natural conversation flow should not be considered a failure. Assign 1 if the agent consistently demonstrated active listening and responded appropriately. Assign 0 only if the agent frequently interrupted, failed to acknowledge or understand the customer's inputs, ignored key information, or responded in a way that indicated poor listening. If the parameter cannot be fairly evaluated due to poor audio quality or recording issues, assign 1."),
+                quality.get("Evaluate whether the agent maintained a polite, respectful, and professional tone throughout the conversation. The agent should use courteous language, avoid rude, dismissive, argumentative, impatient, or sarcastic remarks, and interact with the customer in a calm and respectful manner, even in challenging situations. Minor variations in tone should not be considered a failure if the overall interaction remains professional. Assign 1 if the agent consistently maintained politeness and showed no signs of sarcasm, disrespect, or inappropriate behavior. Assign 0 only if the agent used rude, sarcastic, disrespectful, dismissive, or unprofessional language or tone that negatively impacted the customer interaction. If the parameter cannot be fairly evaluated due to poor audio quality or recording issues, assign 1."),
+                quality.get("Evaluate whether the agent communicated using grammatically correct, clear, and professionally structured language throughout the conversation. The agent should use coherent and meaningful sentences while avoiding significant grammatical mistakes, incorrect sentence construction, or confusing language that could affect customer understanding. Minor spoken-language errors, regional language influences, or informal conversational expressions should not be considered a failure if the overall communication remains clear, natural, and professional. Assign 1 if the agent's grammar was generally correct and did not negatively impact communication. Assign 0 only if frequent or major grammatical errors made the conversation difficult to understand or appeared unprofessional. If the parameter cannot be fairly evaluated due to poor audio quality or recording issues, assign 1."),
+                quality.get("Evaluate whether the agent asked relevant and appropriate probing questions to fully understand the customer's issue, requirement, or concern before providing a solution. The agent should gather all necessary information without asking unnecessary or repetitive questions. Assign 1 if the agent adequately probed to understand the customer's needs. Assign 0 only if the agent failed to collect essential information, asked irrelevant questions, or attempted to resolve the issue without sufficient understanding. If issue probing was not required for the call, assign 1."),
+                quality.get("If the agent placed the customer on hold, verify whether the agent requested permission, informed the customer about the reason for the hold, and thanked the customer after returning from hold. If no hold was required during the call, assign 1. Assign 0 only if the hold procedure was applicable and the agent failed to follow the required process."),
+                quality.get("Evaluate whether the agent avoided unnecessary periods of silence during the conversation. Continuous dead air should not exceed 10 seconds unless the customer was informed beforehand (e.g., the agent requested permission to place the customer on hold or explained that they were checking information). Assign 1 if there were no unexplained periods of silence exceeding 10 seconds, or if any extended silence was properly communicated to the customer. Assign 0 only if unnecessary and unexplained dead air exceeding 10 seconds occurred, negatively impacting the customer experience. If the parameter cannot be fairly evaluated due to recording limitations, poor audio quality, or missing portions of the call, assign 1."),
+                quality.get("Evaluate whether, before ending the conversation, the agent proactively offered additional assistance by asking if the customer needed any further help or had any other questions (e.g., 'Is there anything else I can help you with today?', 'Do you need assistance with anything else?', or equivalent statements). The agent is not required to use the exact wording, but the intent to offer further assistance should be clearly conveyed. If offering further assistance was not applicable due to the customer disconnecting unexpectedly or the call ending for reasons beyond the agent's control, assign 1. Assign 0 only if the parameter was applicable and the agent ended the conversation without offering any additional assistance."),
+                quality.get("Evaluate whether the agent concluded the conversation in a professional, courteous, and customer-friendly manner. A proper call closure should include confirming that the customer's query or request has been addressed (where applicable), thanking the customer for their time, patience, or business, and ending the conversation with a polite closing statement such as 'Have a great day', 'Thank you for calling', or an equivalent professional farewell. The agent is not required to use these exact phrases, but the intent to close the conversation professionally should be evident. Is there anything else I can assist you with ? If the customer disconnected unexpectedly or ended the call before the agent had a reasonable opportunity to provide a proper closing, assign 1. Assign 0 only if the agent had the opportunity to close the call but ended it abruptly, omitted a professional closing, or used an inappropriate or unprofessional closing."),
                 quality.get("Did the agent express empathy using keywords?"),
+                quality.get("If the customer expressed a concern, complaint, issue, or dissatisfaction, verify whether the agent acknowledged it by expressing empathy, assurance, or appreciation using phrases such as 'I understand your concern', 'I am sorry', 'Thank you for informing us', 'Rest assured', etc. If no customer concern was raised during the call, assign 1. Assign 0 only if the parameter was applicable and the agent failed to acknowledge the concern."),
+                quality.get("If the call required a transfer, verify whether the agent informed the customer about the transfer, used appropriate language, and obtained the customer's consent whenever applicable. If no transfer was required during the call, assign 1. Assign 0 only if the parameter was applicable and the agent failed to follow the required process."),
+                quality.get("If the customer's issue required escalation, complaint registration, or service request creation, verify whether the agent clearly informed the customer about the actions being taken. If escalation was not required during the call, assign 1. Assign 0 only if the parameter was applicable and the agent failed to communicate the escalation process correctly."),
+                quality.get("If address collection, verification, or confirmation was required for resolving the customer's issue, verify whether the agent accurately collected and confirmed the complete address. If address verification was not required during the call, assign 1. Assign 0 only if the parameter was applicable and the address was incomplete or incorrect."),
+                quality.get("Verify whether the agent provided correct, accurate, and complete information throughout the call according to company policy. This parameter is applicable to all calls. Assign 1 if the information provided was accurate and complete; otherwise assign 0."),
+                quality.get("If there was a suitable opportunity to recommend relevant products, offers, combos, discounts, coupon codes, premium variants, or complementary products, verify whether the agent made an appropriate recommendation. If upselling was not applicable for the call type (such as complaints, refunds, repeat complaints, escalations, or service-only interactions), assign 1. Assign 0 only if the parameter was applicable and the agent missed the opportunity."),
 
                 quality.get("total_score"),
                 quality.get("max_score"),
@@ -425,6 +677,13 @@ def worker_loop():
                 safe_join(sentiment.get("top_negative_words")),
                 safe_join(sentiment.get("top_positive_words_agent")),
                 safe_join(sentiment.get("top_negative_words_agent")),
+
+                customer_voc.get("Customer VOC Logistic Positive"),
+                customer_voc.get("Customer VOC Logistic Negative"),
+                customer_voc.get("Customer VOC Agent Positive"),
+                customer_voc.get("Customer VOC Agent Negative"),
+                customer_voc.get("Customer VOC Product Positive"),
+                customer_voc.get("Customer VOC Product Negative"),
 
                 safe_join(sentiment.get("cuss_words", {}).get("agent", {}).get("english", {}).get("list")),
                 sentiment.get("cuss_words", {}).get("agent", {}).get("english", {}).get("count"),
@@ -464,6 +723,7 @@ def worker_loop():
                 fraud_text.get("Escalation Failure Text"),
                 fraud_text.get("Collusion Text"),
                 fraud_text.get("Policy Communication Failure Text"),
+                row["recording_path"],
             ))
 
             audit_conn.commit()
