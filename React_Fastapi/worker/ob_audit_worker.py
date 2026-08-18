@@ -601,6 +601,9 @@ def worker_loop():
                 "Alternative_Suggestion": gpt_data.get("Alternative_Suggestion"),
                 "Reason_for_Not_Placing_Order": gpt_data.get("Reason_for_Not_Placing_Order"),
                 "Pricing_and_Discount_Structure": gpt_data.get("Pricing_and_Discount_Structure"),
+                "fraud_and_data_security_compliance": gpt_data.get("fraud_and_data_security_compliance"),
+                "fraud_detected_sentence": gpt_data.get("fraud_detected_sentence"),
+
 
                 "entrydate": datetime.now()
             }

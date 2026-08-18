@@ -559,6 +559,8 @@ def worker_loop():
                     address_recorded_completely,
                     correct_and_complete_information,
                     upselling_or_offers_suggested,
+                    fraud_and_data_security_compliance,
+                    proper_document_and_video_request_handling,
 
                     total_score, max_score, quality_percentage,
 
@@ -595,6 +597,7 @@ def worker_loop():
 
                     sensetive_word,
                     sensitive_word_context,
+                    fraud_detected_sentence,
 
                     data_theft_or_misuse,
                     unprofessional_behavior,
@@ -616,7 +619,7 @@ def worker_loop():
                 VALUES (
                     %s,%s,%s,%s,%s,%s,%s,%s,%s,
                     %s,%s,%s,%s,%s,
-                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
                     %s,%s,%s,%s,%s,%s,
                     %s,%s,%s,
                     %s,
@@ -624,7 +627,7 @@ def worker_loop():
                     %s,%s,%s,%s,
                     %s,%s,%s,%s,%s,%s,%s,%s,
                     %s,%s,%s,%s,%s,%s,%s,
-                    %s,%s,
+                    %s,%s,%s,
                     %s,%s,%s,%s,%s,%s,%s,
                     %s,%s,%s,%s,%s,%s,%s,%s
                 )
@@ -666,6 +669,8 @@ def worker_loop():
                 quality.get("If address collection, verification, or confirmation was required for resolving the customer's issue, verify whether the agent accurately collected and confirmed the complete address. If address verification was not required during the call, assign 1. Assign 0 only if the parameter was applicable and the address was incomplete or incorrect."),
                 quality.get("Verify whether the agent provided correct, accurate, and complete information throughout the call according to company policy. This parameter is applicable to all calls. Assign 1 if the information provided was accurate and complete; otherwise assign 0."),
                 quality.get("If there was a suitable opportunity to recommend relevant products, offers, combos, discounts, coupon codes, premium variants, or complementary products, verify whether the agent made an appropriate recommendation. If upselling was not applicable for the call type (such as complaints, refunds, repeat complaints, escalations, or service-only interactions), assign 1. Assign 0 only if the parameter was applicable and the agent missed the opportunity."),
+                quality.get("Evaluate whether the agent fully complied with fraud prevention and data security guidelines throughout the conversation. The agent must never request, encourage, or collect prohibited confidential information such as OTPs, UPI PINs, ATM/Debit/Credit Card PINs, CVV numbers, internet banking passwords, full card numbers (unless explicitly permitted by company policy), security answers, or any authentication credentials. The agent must not ask customers to transfer money to personal accounts, install unauthorized applications, click suspicious links, share screen access without authorization, or disclose any confidential information unrelated to the service request. Additionally, the agent must not make misleading statements, impersonate another organization, or provide false assurances. Assign 1 if the agent remained fully compliant with fraud prevention and data security policies. Assign 0 only if any fraudulent, deceptive, or unauthorized request for sensitive information or security credentials was made during the call."),
+                quality.get("Evaluate whether the agent correctly handled the customer's concern by requesting and guiding the customer to provide the required supporting documents and evidence. The agent should appropriately ask whether the customer has created an unboxing video and, if not, instruct the customer to create a short video showing the concern and share it along with the invoice through the designated company email ID or approved communication channel. The agent should clearly explain that the submitted details, unboxing video, or invoice must be complete, clear, and properly visible for verification. If the previously submitted details, video, or invoice are incomplete, unclear, or improper, the agent should inform the customer of the issue and request the correct or complete documents again. The agent may also explain that a complaint or request cannot be raised until the required and proper details/documents are received. Where applicable, the agent should communicate that an update will be provided within 24 to 48 hours after receiving the required information. Equivalent Hindi, English, and Hinglish statements should be considered valid. Examples include: 'Sir, Apko 24 to 48 hour me connect krna hota hai agar koi bhi issue hota h product se related', 'Sir, kya aapne unboxing video create ki hai?', 'Agar unboxing video create nahi ki hai toh ek short video create kar lijiye aur invoice ke saath share kar dijiye', 'Humari mail ID par share kar dijiye', '24 to 48 hours mein update share kar diya jayega', 'Aapne jo details share ki hain woh proper nahi hain', 'Unboxing proper nahi hai', 'Invoice show nahi ho raha hai', 'Invoice aur video proper share karein', 'Proper details receive hone ke baad request raise ki jayegi', 'Bina proper details ke complaint raise nahi kar paunga/paungi, maaf chahunga/chahungi'. The agent does not need to use the exact wording; semantically equivalent statements are acceptable. Assign 1 if the agent appropriately requested, explained, or guided the customer regarding the required video, invoice, details, resubmission, complaint/request process, or applicable 24â€“48 hour update. Assign 0 only if the agent failed to provide the required guidance when it was applicable. If the required documents or video were not relevant to the conversation, assign 1. When this parameter is applicable and the agent makes any relevant statement, extract the EXACT sentence or phrase spoken by the agent that supports this parameter. Preserve the original wording exactly as it appears in the transcript, including Hindi, English, or Hinglish wording. Do not paraphrase, translate, summarize, or correct the extracted statement. If multiple relevant statements are present, return all relevant statements."),
 
                 quality.get("total_score"),
                 quality.get("max_score"),
@@ -707,6 +712,7 @@ def worker_loop():
 
                 gpt_data.get("sensitive_word"),
                 gpt_data.get("sensitive_word_context"),
+                gpt_data.get("fraud_detected_sentence"),
 
                 fraud.get("Data Theft or Misuse"),
                 fraud.get("Unprofessional Behavior"),

@@ -1,4 +1,5 @@
 from functools import lru_cache
+import re
 
 from fastapi import APIRouter, Header, HTTPException, Request, status, Query
 from pydantic import BaseModel, Field
@@ -23,6 +24,18 @@ def gateway() -> ExternalGateway:
 
 UNKNOWN_STATUS = "UNKNOWN_STATUS"
 
+
+def _to_indian_e164(caller_number: str) -> str:
+    """Dialplan callers pass a bare 10-digit subscriber number (Asterisk
+    CALLERID(num)); reject anything else and prefix the country code before
+    it ever reaches the gateway."""
+    digits = re.sub(r"\D", "", caller_number)
+    if len(digits) != 10:
+        raise ValueError("caller_number must be exactly 10 digits")
+    return f"91{digits}"
+
+
+
 @router.get("/dialplan/orders/latest", response_class=PlainTextResponse)
 async def get_latest_order_status_dialplan(
     caller_number: str = Query(...),
@@ -37,8 +50,14 @@ async def get_latest_order_status_dialplan(
         Set(para3=${CUT(API_RESULT,/,3)})   ; order status text (TTS or SayAlpha)
         Set(para4=${CUT(API_RESULT,/,4)})   ; EDD, empty if not shipped/unknown
     """
+
     try:
-        result = await latest_order_status(gateway(), caller_number)
+        normalised_number = _to_indian_e164(caller_number)
+    except ValueError:
+        return UNKNOWN_STATUS
+
+    try:
+        result = await latest_order_status(gateway(), normalised_number)
     except RuntimeError:
         return UNKNOWN_STATUS
     except Exception:
@@ -56,19 +75,26 @@ async def get_customer_category_dialplan(
     caller_number: str = Query(..., description="Caller ID, E.164, e.g. 919876543210"),
 ) -> str:
     """Plain-text endpoint for Asterisk CURL(). Returns 'prompt_id/handoff'."""
+
     try:
-        customer = await gateway().customer_by_phone(caller_number)
+        normalised_number = _to_indian_e164(caller_number)
+    except ValueError:
+        return UNKNOWN_STATUS
+
+    try:
+        customer = await gateway().customer_by_phone(normalised_number)
     except RuntimeError:
         return UNKNOWN_STATUS
     except GatewayError:
-        return "agent_handoff/1"
+        return "non_premium/0/new"
     except Exception:
         return UNKNOWN_STATUS
 
     category = customer_category(customer)
-    prompt_id = "premium_customer" if category == "PREMIUM" else "non_premium_customer"
+    prompt_id = "premium" if category == "PREMIUM" else "non_premium"
     handoff = "1" if category == "PREMIUM" else "0"
-    return f"{prompt_id}/{handoff}"
+    customer_type = "existing"
+    return f"{prompt_id}/{handoff}/{customer_type}"
 
 
 # def verify_agi_secret(provided: str | None) -> None:
