@@ -356,6 +356,80 @@ def whisper_transcribe(audio_url: str) -> str:
 
 
 
+import logging
+import os
+import time
+
+import requests
+
+WHISPER_SERVER_URL = os.environ.get("WHISPER_SERVER_URL", "http://103.35.164.249:8010")
+WHISPER_API_KEY = os.environ.get("WHISPER_API_KEY")  # must match API_KEY in server's .env
+
+
+def local_transcribe(audio_url: str, diarize: bool = True, num_speakers: int | None = 2) -> str:
+    """Same contract as deepgram_transcribe(): returns a stripped transcript string, or ''."""
+    try:
+        if not audio_url:
+            return ""
+
+        session = requests.Session()
+        headers_req = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "*/*",
+            "Referer": audio_url,
+        }
+
+        audio_bytes = None
+        for attempt in range(3):
+            try:
+                audio_res = session.get(audio_url, headers=headers_req, timeout=60, verify=False)
+                if audio_res.status_code == 200:
+                    audio_bytes = audio_res.content
+                    break
+                logging.warning(f"Attempt {attempt + 1} failed: {audio_res.status_code}")
+                time.sleep(2)
+            except Exception as e:
+                logging.warning(f"Retry {attempt + 1} error: {e}")
+                time.sleep(2)
+        else:
+            logging.error(f"Audio fetch failed completely: {audio_url}")
+            return ""
+
+        if not audio_bytes:
+            logging.error(f"Empty audio file: {audio_url}")
+            return ""
+
+        filename = audio_url.split("/")[-1] or "audio.mp3"
+
+        # Push bytes to the local GPU server instead of Deepgram
+        push_headers = {}
+        if WHISPER_API_KEY:
+            push_headers["X-API-Key"] = WHISPER_API_KEY
+
+        data = {"diarize": str(diarize).lower()}
+        if num_speakers is not None:
+            data["num_speakers"] = str(num_speakers)
+
+        res = requests.post(
+            f"{WHISPER_SERVER_URL}/transcribe",
+            headers=push_headers,
+            files={"file": (filename, audio_bytes)},
+            data=data,
+            timeout=(30, 600),
+        )
+
+        if res.status_code != 200:
+            logging.error(f"Local transcribe server failed: {res.text}")
+            return ""
+
+        return res.json().get("transcript", "").strip()
+
+    except Exception as e:
+        logging.error(f"Local transcribe error: {e}")
+        return ""
+
+
+
 def send_to_gpt(prompt: str) -> dict:
     try:
         res = client.chat.completions.create(
@@ -472,7 +546,8 @@ def worker_loop():
                 continue
 
             # transcription = deepgram_transcribe(row["recording_path"])
-            transcription = whisper_transcribe(row["recording_path"])
+            # transcription = whisper_transcribe(row["recording_path"])
+            transcription = local_transcribe(row["recording_path"])
 
             start_epoch = safe_timestamp(row["start_time"])
             end_epoch = safe_timestamp(row["end_time"])
